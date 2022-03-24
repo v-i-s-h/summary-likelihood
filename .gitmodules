@@ -1,0 +1,3 @@
+[submodule "bayesian-torch-repo"]
+	path = bayesian-torch-repo
+	url = https://github.com/IntelLabs/bayesian-torch.git
