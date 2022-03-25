@@ -103,6 +103,7 @@ class BinaryMNISTC(DatasetBase):
         self.y = self.y
 
         # Set sample weight for minority class
+        self.n_labels = len(labels)
         self.n_samples = self.y.shape[0]
         self.n_minority = idx1.shape[0]
         self.n_majority = self.n_samples - self.n_minority
