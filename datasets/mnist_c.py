@@ -89,7 +89,7 @@ class BinaryMNISTC(DatasetBase):
 
         idx = np.sort(np.hstack((idx0, idx1))) # index of selected samples
         
-        self.x = x[idx]
+        self.x = np.float32(x[idx])
         self.y = y[idx]
 
         # Rescale x to 0 - 1 range
@@ -100,7 +100,7 @@ class BinaryMNISTC(DatasetBase):
         idx1 = np.where(self.y == self.labels[1])[0]
         self.y[idx0] = 0
         self.y[idx1] = 1
-        self.y = self.y.astype(float) # as floating point
+        self.y = self.y
 
         # Set sample weight for minority class
         self.n_samples = self.y.shape[0]
