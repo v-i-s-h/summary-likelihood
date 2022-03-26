@@ -1,9 +1,10 @@
 # Algorithms for training the model
 
-from numpy import isin
 import torch
 import torch.nn.functional as F
+
 from pytorch_lightning import LightningModule
+import torchmetrics
 
 
 class BaseModel(LightningModule):
@@ -24,6 +25,12 @@ class BaseModel(LightningModule):
             self.class_weight = None
         self.mc_samples = mc_samples
 
+        # Metrics
+        self.train_accuracy = torchmetrics.Accuracy()
+        self.val_accuracy = torchmetrics.Accuracy()
+        self.train_f1score = torchmetrics.F1Score(ignore_index=0)
+        self.val_f1score = torchmetrics.F1Score(ignore_index=0)
+
     def forward(self, x):
         return self.model(x)
 
@@ -34,14 +41,24 @@ class BaseModel(LightningModule):
         for i in range(self.mc_samples):
             _ypred, _kl = self(x)
             ypred.append(_ypred)
-            kl_loss = _kl # KL loss is sample for all samples
+            kl_loss = _kl # KL loss is same for all samples
         
         loss, ypred = self.compute_loss(ypred, y, kl_loss)
         preds = torch.argmax(ypred, dim=1)
         
         self.log('train_loss', loss.detach())
 
+        # Compute metrics
+        self.train_accuracy.update(preds, y)
+        self.train_f1score.update(preds, y)
+
         return loss
+
+    def on_train_epoch_end(self):
+        self.log('train_acc', self.train_accuracy, prog_bar=True)
+        self.log('train_f1', self.train_f1score, prog_bar=True)
+
+        return super().on_train_epoch_end()
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
@@ -50,21 +67,27 @@ class BaseModel(LightningModule):
         for i in range(self.mc_samples):
             _ypred, _kl = self(x)
             ypred.append(_ypred)
-            kl_loss = _kl # KL loss is sample for all samples
+            kl_loss = _kl # KL loss is same for all samples
         
         val_loss, ypred = self.compute_loss(ypred, y, kl_loss)
         preds = torch.argmax(ypred, dim=1)
         
         self.log('val_loss', val_loss.detach())
 
+        # Compute metrics
+        self.val_accuracy.update(preds, y)
+        self.val_f1score.update(preds, y)
+
         return val_loss
+
+    def validation_epoch_end(self, outputs):
+        self.log('val_acc', self.val_accuracy, prog_bar=True)
+        self.log('val_f1', self.val_f1score, prog_bar=True)
+
+        return super().validation_epoch_end(outputs)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=0.001)
-
-    # def setup(self, stage) -> None:
-    #     self.class_weight = self.class_weight.to(self.device)
-    #     return super().setup(stage)
 
     def compute_loss(self, ypred, y, kl_loss):
         """
