@@ -1,5 +1,6 @@
 # Algorithms for training the model
 
+from numpy import isin
 import torch
 import torch.nn.functional as F
 from pytorch_lightning import LightningModule
@@ -29,12 +30,15 @@ class BaseModel(LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
 
-        # TODO: MC forwards
-
-        ypred, kl_loss = self(x)
-
-        loss = self.compute_loss(ypred, y, kl_loss)
-
+        ypred = []
+        for i in range(self.mc_samples):
+            _ypred, _kl = self(x)
+            ypred.append(_ypred)
+            kl_loss = _kl # KL loss is sample for all samples
+        
+        loss, ypred = self.compute_loss(ypred, y, kl_loss)
+        preds = torch.argmax(ypred, dim=1)
+        
         self.log('train_loss', loss.detach())
 
         return loss
@@ -42,14 +46,16 @@ class BaseModel(LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         
-        # TODO: Do MC forwards
-        ypred, kl_loss = self(x)
+        ypred = []
+        for i in range(self.mc_samples):
+            _ypred, _kl = self(x)
+            ypred.append(_ypred)
+            kl_loss = _kl # KL loss is sample for all samples
         
+        val_loss, ypred = self.compute_loss(ypred, y, kl_loss)
         preds = torch.argmax(ypred, dim=1)
-
-        val_loss = self.compute_loss(ypred, y, kl_loss)
-
-        self.log("val_loss", val_loss.detach())
+        
+        self.log('val_loss', val_loss.detach())
 
         return val_loss
 
@@ -74,16 +80,37 @@ class MFVI(BaseModel):
         self.lam_kl = lam_kl
 
     def compute_loss(self, y_pred, y, kl_loss):
+        """
+            Compute loss 
+
+        y_pred  : tensor
+            List (of length mc_samples) of Predicted log_softmax of shape (batch_size, classes)
+        y       : tensor
+            Target tensor of size (batch_size)
+        kl_loss : tensor
+            KL loss for forward.
+        """
+
+        if isinstance(y_pred, list):
+            # In multiple MC samples are present, then find mean
+            y_pred = torch.mean(torch.stack(y_pred), dim=0)
+        if isinstance(kl_loss, list):
+            kl_loss = torch.mean(torch.stack(kl_loss), dim=0)
+
+        # Predictive loss
         pred_loss = F.nll_loss(y_pred, y, weight=self.class_weight)
 
-        _kl_loss = self.lam_kl * kl_loss
-        loss = pred_loss + _kl_loss
+        # KL Loss
+        scaled_kl_loss = self.lam_kl * kl_loss
+
+        # Total loss
+        loss = pred_loss + scaled_kl_loss
 
         self.log('pred_loss', pred_loss.detach())
         self.log('kl_loss', kl_loss.detach())
-        self.log('kl_loss_eff', _kl_loss.detach())
+        self.log('scaled_kl_loss', scaled_kl_loss.detach())
 
-        return loss
+        return loss, y_pred
 
 
 # For lookup
