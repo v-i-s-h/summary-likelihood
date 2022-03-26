@@ -2,7 +2,6 @@
 # reparameterization
 
 
-from email.policy import default
 import os
 import json
 import argparse
@@ -20,7 +19,7 @@ from pytorch_lightning import loggers as pl_loggers
 import models
 import datasets
 import methods
-from utils import parse_params_str, SoftHistogram
+from utils import parse_params_str
 import config as cfg
 
 
@@ -71,9 +70,10 @@ def run_experiment(
         Whether to use GPU or not
 
     """
-    device = 'cpu'
     if use_gpu and torch.cuda.is_available():
-        device = 'cuda'
+        gpus = 1
+    else:
+        gpus = None
 
 
     x_transform = getattr(transforms, transform)() # returns a transformation object
@@ -101,6 +101,14 @@ def run_experiment(
     else:
         w = None
 
+    # Set scaling constants if not provided
+    if lam_kl is None:
+        lam_kl = 1.0 / N
+        print("INFO: Setting lam_kl = {}".format(lam_kl))
+    if lam_sl is None:
+        lam_sl = 1.0 / N
+        print("INFO: Setting lam_sl = {}".format(lam_sl))
+
     # Prepare model to train
     model = ModelClass(K)
 
@@ -115,7 +123,7 @@ def run_experiment(
 
     trainer = Trainer(
         max_steps=max_steps,
-        gpus=1, #if use_gpu else None,
+        gpus=gpus,
         logger=tb_logger,
         callbacks=[ckp_cb]
     )
@@ -173,9 +181,9 @@ def main():
     parser.set_defaults(wt_loss=False)
     parser.add_argument('--mc-samples', type=int, required=False, default=32,
             help="Number of MonteCarlo forwards for averaging")
-    parser.add_argument('--lam-kl', type=float, default=1.0,
+    parser.add_argument('--lam-kl', type=float, default=None,
             help="Scaling for KL loss")
-    parser.add_argument('--lam-sl', type=float, default=1.0,
+    parser.add_argument('--lam-sl', type=float, default=None,
             help="Scaling for Summary likelihood loss")
 
     # Base measure related
