@@ -1,5 +1,6 @@
 # Algorithms for training the model
 
+from turtle import shape
 import torch
 import torch.nn.functional as F
 
@@ -78,11 +79,22 @@ class BaseModel(LightningModule):
         self.val_accuracy.update(preds, y)
         self.val_f1score.update(preds, y)
 
-        return val_loss
+        return {
+            'loss': val_loss,
+            'ypred': ypred
+        }
 
     def validation_epoch_end(self, outputs):
+
         self.log('val_acc', self.val_accuracy, prog_bar=True)
         self.log('val_f1', self.val_f1score, prog_bar=True)
+
+        # Log histogram of predictions
+        ypred = torch.cat([o['ypred'] for o in outputs], dim=0)
+        self.logger.experiment.add_histogram(
+            'y_pred', torch.exp(ypred[:, 1]), # only for label 1
+            global_step=self.current_epoch,
+            bins=10)
 
         return super().validation_epoch_end(outputs)
 
