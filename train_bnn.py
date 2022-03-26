@@ -75,6 +75,7 @@ def run_experiment(
     else:
         gpus = None
 
+    disable_pbar = int(os.environ.get('DISABLE_PBAR', 0)) == 1
 
     x_transform = getattr(transforms, transform)() # returns a transformation object
 
@@ -125,7 +126,8 @@ def run_experiment(
         max_steps=max_steps,
         gpus=gpus,
         logger=tb_logger,
-        callbacks=[ckp_cb]
+        callbacks=[ckp_cb],
+        enable_progress_bar=not disable_pbar
     )
 
     trainer.fit(pl_model, tr_loader, test_loader)
