@@ -108,7 +108,9 @@ def run_experiment(
     # print(pl_model)
     
     tb_logger = pl_loggers.TensorBoardLogger(outdir)
-    ckp_cb = ModelCheckpoint(outdir)
+    ckp_cb = ModelCheckpoint(outdir, 
+                save_last=True, save_top_k=1, monitor='val_f1',
+                filename="{step:05d}")
 
     trainer = Trainer(
         max_steps=max_steps,
