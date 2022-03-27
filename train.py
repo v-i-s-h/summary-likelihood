@@ -24,12 +24,13 @@ import config as cfg
 
 
 def run_experiment(
-        method,
+        method, method_params,
         dataset, ds_params, transform, 
         model_str, 
         max_steps, batch_size,
-        base_params, nbins, alpha,
-        wt_loss, lam_kl, lam_sl,
+        # base_params, nbins, alpha,
+        wt_loss, 
+        # lam_kl, lam_sl,
         mc_samples, 
         use_gpu,
         outdir):
@@ -96,23 +97,17 @@ def run_experiment(
     else:
         w = None
 
-    # Set scaling constants if not provided
-    if lam_kl is None:
-        lam_kl = 1.0 / N
-        print("INFO: Setting lam_kl = {}".format(lam_kl))
-    if lam_sl is None:
-        lam_sl = 1.0 / N
-        print("INFO: Setting lam_sl = {}".format(lam_sl))
-
     # Prepare model to train
     model = ModelClass(K)
 
-    # Prepare lightning model
-    if method == 'mfvi':
-        pl_model = methods.MFVI(model, lam_kl=lam_kl, class_weight=w, mc_samples=mc_samples)
-    else:
-        raise ValueError("Unknown method '{}'".format(method))
+    MethodClass = getattr(methods, method)
 
+    # Get default params
+    method_params = MethodClass.populate_missing_params(method_params, trainset)
+    pl_model = MethodClass(model, **method_params, class_weight=w, mc_samples=mc_samples)
+
+    print(pl_model)
+    
     tb_logger = pl_loggers.TensorBoardLogger(outdir)
     ckp_cb = ModelCheckpoint(outdir)
 
@@ -173,21 +168,23 @@ def main():
     parser.set_defaults(wt_loss=False)
     parser.add_argument('--mc-samples', type=int, required=False, default=32,
             help="Number of MonteCarlo forwards for averaging")
-    parser.add_argument('--lam-kl', type=float, default=None,
-            help="Scaling for KL loss")
-    parser.add_argument('--lam-sl', type=float, default=None,
-            help="Scaling for Summary likelihood loss")
-
-    # Base measure related
-    parser.add_argument('--base-params', type=str, required=False, default="auto",
-            help="Parameters for base measure")
-    parser.add_argument('--nbins', type=int, required=False, default=10,
-            help="Number of partitions for Dirichlet Prior (Default: 10)")
-    parser.add_argument('--alpha', type=float, required=False, default=500.0,
-            help="Concentration parameter for Dirichlet prior")
+    
+    # Method specific params
+    # parser.add_argument('--lam-kl', type=float, default=None,
+    #         help="Scaling for KL loss")
+    # parser.add_argument('--lam-sl', type=float, default=None,
+    #         help="Scaling for Summary likelihood loss")
+    # parser.add_argument('--base-params', type=str, required=False, default="auto,ea=0.95",
+    #         help="Parameters for base measure")
+    # parser.add_argument('--nbins', type=int, required=False, default=10,
+    #         help="Number of partitions for Dirichlet Prior (Default: 10)")
+    # parser.add_argument('--alpha', type=float, required=False, default=500.0,
+    #         help="Concentration parameter for Dirichlet prior")
+    parser.add_argument('--params', type=str, required=False,
+            help="Additional arguments for training algorithm")
     
     # Others
-    parser.add_argument('--outdir', type=str, required=False, default="zoo/",
+    parser.add_argument('--outdir', type=str, required=False, default="zoo/test/",
             help="Parent output directory to save model")
     parser.add_argument('--gpu', dest='use_gpu', action='store_true')
     parser.add_argument('--no-gpu', dest='use_gpu', action='store_false')
@@ -198,24 +195,26 @@ def main():
     args = parser.parse_args()
 
     method = args.method
+    method_params = args.params
     dataset = args.dataset
     ds_params = args.ds_params
     transform = args.transform
     model = args.model
     max_steps = args.max_steps
     batch_size = args.batch_size
-    base_params = args.base_params
-    alpha = args.alpha
-    nbins = args.nbins
+    # base_params = args.base_params
+    # alpha = args.alpha
+    # nbins = args.nbins
     wt_loss = args.wt_loss
-    lam_kl = args.lam_kl
-    lam_sl = args.lam_sl
+    # lam_kl = args.lam_kl
+    # lam_sl = args.lam_sl
     mc_samples = args.mc_samples
     use_gpu = args.use_gpu
 
     # Parse any params
     ds_params = parse_params_str(ds_params)
-    base_params = parse_params_str(base_params)
+    # base_params = parse_params_str(base_params)
+    method_params = parse_params_str(method_params)
 
     dataset_str = dataset + '-' + '-'.join([str(v) for _, v in ds_params.items()])
 
@@ -227,17 +226,17 @@ def main():
 
     
     # Print experiment configuration
-    print("Method           :", method)
+    print("Method           :", method, method_params)
     print("Dataset          :", dataset, ds_params, transform)
     print("Model            :", model)
     print("Max steps        :", max_steps)
     print("Batch size       :", batch_size)
-    print("Base meassure    :", base_params)
-    print("Paritions        :", nbins)
-    print("alpha            :", alpha)
-    print("Wieghted Loss    :", wt_loss)
-    print("lam_kl           :", lam_kl)
-    print("lam_sl           :", lam_sl)
+    # print("Base meassure    :", base_params)
+    # print("Paritions        :", nbins)
+    # print("alpha            :", alpha)
+    print("Weighted Loss    :", wt_loss)
+    # print("lam_kl           :", lam_kl)
+    # print("lam_sl           :", lam_sl)
     print("MC samples       :", mc_samples)
     print("Use GPU          :", use_gpu)
     print("Outdir           :", outdir)
@@ -250,28 +249,30 @@ def main():
     with open(config_file_path, 'w') as fp:
         json.dump({
             'method': method,
+            'method_params': method_params,
             'dataset': dataset,
             'ds_params': ds_params,
             'transform': transform,
             'model': model,
             'max_steps': max_steps,
             'batch_size': batch_size,
-            'base_params': base_params,
-            'nbins': nbins,
-            'alpha': alpha,
+            # 'base_params': base_params,
+            # 'nbins': nbins,
+            # 'alpha': alpha,
             'wt_loss': wt_loss,
-            'lam_kl': lam_kl,
-            'lam_sl': lam_sl,
+            # 'lam_kl': lam_kl,
+            # 'lam_sl': lam_sl,
             'mc_samples': mc_samples
         }, fp, indent=2)
 
     run_experiment(
-        method,
+        method, method_params,
         dataset, ds_params, transform, 
         model, 
         max_steps, batch_size,
-        base_params, nbins, alpha,
-        wt_loss, lam_kl, lam_sl,
+        # base_params, nbins, alpha,
+        wt_loss, 
+        # lam_kl, lam_sl,
         mc_samples, 
         use_gpu,
         outdir)

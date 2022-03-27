@@ -1,12 +1,9 @@
 # Algorithms for training the model
 
-from turtle import shape
 import torch
-import torch.nn.functional as F
 
 from pytorch_lightning import LightningModule
 import torchmetrics
-
 
 class BaseModel(LightningModule):
     def __init__(self, model, class_weight=None, mc_samples=32) -> None:
@@ -106,47 +103,3 @@ class BaseModel(LightningModule):
             To be implemented in child
         """
         raise NotImplementedError('')
-
-
-
-class MFVI(BaseModel):
-    def __init__(self, model, lam_kl=1.0, class_weight=None, mc_samples=32) -> None:
-        super().__init__(model, class_weight, mc_samples)
-        self.lam_kl = lam_kl
-
-    def compute_loss(self, y_pred, y, kl_loss):
-        """
-            Compute loss 
-
-        y_pred  : tensor
-            List (of length mc_samples) of Predicted log_softmax of shape (batch_size, classes)
-        y       : tensor
-            Target tensor of size (batch_size)
-        kl_loss : tensor
-            KL loss for forward.
-        """
-
-        if isinstance(y_pred, list):
-            # In multiple MC samples are present, then find mean
-            y_pred = torch.mean(torch.stack(y_pred), dim=0)
-        if isinstance(kl_loss, list):
-            kl_loss = torch.mean(torch.stack(kl_loss), dim=0)
-
-        # Predictive loss
-        pred_loss = F.nll_loss(y_pred, y, weight=self.class_weight)
-
-        # KL Loss
-        scaled_kl_loss = self.lam_kl * kl_loss
-
-        # Total loss
-        loss = pred_loss + scaled_kl_loss
-
-        self.log('pred_loss', pred_loss.detach())
-        self.log('kl_loss', kl_loss.detach())
-        self.log('scaled_kl_loss', scaled_kl_loss.detach())
-
-        return loss, y_pred
-
-
-# For lookup
-mfvi = MFVI
