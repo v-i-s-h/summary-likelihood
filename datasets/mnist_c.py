@@ -41,10 +41,8 @@ class BinaryMNISTC(DatasetBase):
                     "./../data/"))):
         super().__init__()
 
-        if len(labels) != 2:
-            raise ValueError("Labels must be 2 in length. Provide '{}' with length {}".format(
-                labels, len(labels)
-            ))
+
+        assert labels > 9 and labels < 100, "Sublabels can be only two digits"
         
         if corruption not in self.corruptions:
             raise ValueError("Unknown corruption '{}'. Possible corruptions are [{}]".format(
@@ -52,7 +50,7 @@ class BinaryMNISTC(DatasetBase):
                 ', '.join(self.corruptions)
             ))
 
-        self.labels = [int(l) for l in list(labels)]
+        self.labels = [int(l) for l in str(labels)]
         self.corruption = corruption
         self.split = split
         self.transform = transform
@@ -103,7 +101,7 @@ class BinaryMNISTC(DatasetBase):
         self.y = self.y
 
         # Set sample weight for minority class
-        self.n_labels = len(labels)
+        self.n_labels = 2 # Binary dataset
         self.n_samples = self.y.shape[0]
         self.n_minority = idx1.shape[0]
         self.n_majority = self.n_samples - self.n_minority

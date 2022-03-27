@@ -25,7 +25,7 @@ import config as cfg
 
 def run_experiment(
         method,
-        dataset, sublabel, corruption, imbalance, transform, 
+        dataset, ds_params, transform, 
         model_str, 
         max_steps, batch_size,
         base_params, nbins, alpha,
@@ -42,12 +42,8 @@ def run_experiment(
         Method to train BNN
     dataset : str
         Name of dataset
-    sublabel : str
-        Sublabels to select from dataset
-    corruption : str
-        Corruption label
-    imbalance : float
-        Class imbalance
+    ds_params : dict
+        kwargs for dataset class
     transform : str
         Input transformation
     model_str : str
@@ -81,10 +77,8 @@ def run_experiment(
 
     # Load dataset
     DatasetClass = getattr(datasets, dataset)
-    trainset = DatasetClass(sublabel, corruption, 'train', 
-                    imbalance=imbalance, transform=x_transform)
-    testset = DatasetClass(sublabel, corruption, 'test', 
-                    imbalance=imbalance, transform=x_transform)
+    trainset = DatasetClass(**ds_params, split='train', transform=x_transform)
+    testset = DatasetClass(**ds_params, split='test', transform=x_transform)
 
     tr_loader = DataLoader(dataset=trainset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(dataset=testset,  batch_size=batch_size, shuffle=False)
@@ -127,7 +121,8 @@ def run_experiment(
         gpus=gpus,
         logger=tb_logger,
         callbacks=[ckp_cb],
-        enable_progress_bar=not disable_pbar
+        enable_progress_bar=not disable_pbar,
+        log_every_n_steps=10
     )
 
     trainer.fit(pl_model, tr_loader, test_loader)
@@ -154,13 +149,8 @@ def main():
     # Dataset related
     parser.add_argument('--dataset', type=str, required=True,
             help='Datasets to train eval.')
-    parser.add_argument('--sublabel', type=str, required=True,
-            help='Sublabel inside dataset. Ex 53 (BinaryMNISTC')
-    parser.add_argument('--corruption', type=str, required=False,
-            default='identity',
-            help="Corruption to be used")
-    parser.add_argument('--imbalance', type=float, required=False, default=None,
-            help='Imbalance in dataset')
+    parser.add_argument('--ds-params', type=str, required=True,
+            help="Additional params for dataset in param1=val1,param2=val2,... format")
     parser.add_argument('--transform', type=str, required=False,
             default='normalize_x',
             help='Input transform to be applied. Defined in `transforms.py`')
@@ -209,9 +199,7 @@ def main():
 
     method = args.method
     dataset = args.dataset
-    sublabel = args.sublabel
-    corruption = args.corruption
-    imbalance = args.imbalance
+    ds_params = args.ds_params
     transform = args.transform
     model = args.model
     max_steps = args.max_steps
@@ -225,8 +213,11 @@ def main():
     mc_samples = args.mc_samples
     use_gpu = args.use_gpu
 
-    dataset_str = dataset + "-" + sublabel + '-' + corruption
+    # Parse any params
+    ds_params = parse_params_str(ds_params)
+    base_params = parse_params_str(base_params)
 
+    dataset_str = dataset + '-' + '-'.join([str(v) for _, v in ds_params.items()])
 
     outdir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             args.outdir, 
@@ -234,12 +225,10 @@ def main():
                             model, 
                             args.prefix+"-"+timestamp if args.prefix else timestamp)
 
-    # Parse any params
-    base_params = parse_params_str(base_params)
     
     # Print experiment configuration
     print("Method           :", method)
-    print("Dataset          :", dataset, sublabel, corruption, transform)
+    print("Dataset          :", dataset, ds_params, transform)
     print("Model            :", model)
     print("Max steps        :", max_steps)
     print("Batch size       :", batch_size)
@@ -252,7 +241,7 @@ def main():
     print("MC samples       :", mc_samples)
     print("Use GPU          :", use_gpu)
     print("Outdir           :", outdir)
-    
+
     # Make output dir
     os.makedirs(outdir, exist_ok=True)
 
@@ -262,9 +251,7 @@ def main():
         json.dump({
             'method': method,
             'dataset': dataset,
-            'sublabel': sublabel,
-            'corruption': corruption,
-            'imbalance': imbalance,
+            'ds_params': ds_params,
             'transform': transform,
             'model': model,
             'max_steps': max_steps,
@@ -280,7 +267,7 @@ def main():
 
     run_experiment(
         method,
-        dataset, sublabel, corruption, imbalance, transform, 
+        dataset, ds_params, transform, 
         model, 
         max_steps, batch_size,
         base_params, nbins, alpha,
