@@ -93,6 +93,9 @@ class BaseModel(LightningModule):
             global_step=self.current_epoch,
             bins=10)
 
+        # Log metrics with hparams
+        self.logger.log_hyperparams(self.hparams, {'xa': 2.0, 'xb': 2.3})
+
         return super().validation_epoch_end(outputs)
 
     def configure_optimizers(self):

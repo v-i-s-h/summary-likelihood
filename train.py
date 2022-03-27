@@ -101,7 +101,7 @@ def run_experiment(
     pl_model = MethodClass(model, **method_params, class_weight=w, mc_samples=mc_samples)
 
     tb_logger = pl_loggers.TensorBoardLogger(outdir)
-    tb_logger.log_hyperparams(pl_model.hparams)
+    # tb_logger.log_hyperparams(pl_model.hparams)
     ckp_cb = ModelCheckpoint(outdir, 
                 save_last=True, save_top_k=1, monitor='val_f1',
                 filename="{step:05d}")
