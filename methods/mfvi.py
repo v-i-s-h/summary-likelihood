@@ -5,11 +5,14 @@ import torch.nn.functional as F
 
 
 class MFVI(BaseModel):
-    def __init__(self, model, lam_kl=1.0, class_weight=None, mc_samples=32) -> None:
+    def __init__(self, model, lam_kl=1.0, 
+            class_weight=None, mc_samples=32) -> None:
+        
         super().__init__(model, class_weight, mc_samples)
+
         self.lam_kl = lam_kl
 
-        print(self.lam_kl, self.class_weight, self.mc_samples)
+        self.save_hyperparameters(ignore=['model'])
 
     def compute_loss(self, y_pred, y, kl_loss):
         """

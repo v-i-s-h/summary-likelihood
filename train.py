@@ -28,9 +28,7 @@ def run_experiment(
         dataset, ds_params, transform, 
         model_str, 
         max_steps, batch_size,
-        # base_params, nbins, alpha,
         wt_loss, 
-        # lam_kl, lam_sl,
         mc_samples, 
         use_gpu,
         outdir):
@@ -41,6 +39,8 @@ def run_experiment(
     ----------
     method : str
         Method to train BNN
+    methods_params : str
+        Parameters for method in comma separated list
     dataset : str
         Name of dataset
     ds_params : dict
@@ -53,12 +53,6 @@ def run_experiment(
         Maximum number of epochs to train
     batch_size : int
         Minibatch size
-    base_params : dict
-        Dictionary of base measure parameters
-    nbins : int
-        Number of partitions for Dirichlet Prior
-    alpha : float
-        Concentration paramters for Dirichlet prior
     wt_loss : Bool
         Whether to use weighted loss for prediction loss
     mc_samples : int
@@ -105,9 +99,9 @@ def run_experiment(
     # Get default params
     method_params = MethodClass.populate_missing_params(method_params, trainset)
     pl_model = MethodClass(model, **method_params, class_weight=w, mc_samples=mc_samples)
-    # print(pl_model)
-    
+
     tb_logger = pl_loggers.TensorBoardLogger(outdir)
+    tb_logger.log_hyperparams(pl_model.hparams)
     ckp_cb = ModelCheckpoint(outdir, 
                 save_last=True, save_top_k=1, monitor='val_f1',
                 filename="{step:05d}")
@@ -241,7 +235,8 @@ def main():
         mc_samples, 
         use_gpu,
         outdir)
-    
+
+    print("") # New line at the end of experiment
 
 
 if __name__=="__main__":

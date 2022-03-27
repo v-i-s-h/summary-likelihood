@@ -137,8 +137,9 @@ class SummaryLikelihood(BaseModel):
             sobs, alpha=1.0,
             lam_kl=1.0, lam_sl=1.0, 
             class_weight=None, mc_samples=32) -> None:
-        super().__init__(model, class_weight, mc_samples)
         
+        super().__init__(model, class_weight, mc_samples)
+
         self.lam_kl = lam_kl
         self.lam_sl = lam_sl
         
@@ -149,6 +150,8 @@ class SummaryLikelihood(BaseModel):
         # Histogram estimator
         self.hist_est = SoftHistogram(bins=self.partitions, 
                         min=0, max=1, sigma=500).to(self.device)
+
+        self.save_hyperparameters(ignore=['model'])
 
 
     def compute_loss(self, y_pred, y, kl_loss):
