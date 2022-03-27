@@ -2,47 +2,6 @@
     Utility functions
 """
 
-import torch
-import torch.nn as nn
-
-
-class SoftHistogram(nn.Module):
-    """
-        Create soft histogram from samples
-    """
-    def __init__(self, bins, min, max, sigma):
-        """
-        Parameters
-        ----------
-        bins : int
-            Number of bins in histogram
-        min : float
-            Minumum value
-        max : float
-            Maximum value
-        sigma : float
-            Slope of sigmoid
-        """
-        super().__init__()
-        self.bins = bins
-        self.min = min
-        self.max = max
-        self.sigma = sigma
-        self.delta = float(max - min) / float(bins)
-        self.centers = float(min) + self.delta * (torch.arange(bins).float() + 0.50)
-        self.centers = nn.Parameter(self.centers, requires_grad=False)
-
-    def forward(self, x):
-        """Computes soft histogram"""
-        x = torch.unsqueeze(x, 1) - torch.unsqueeze(self.centers, 1)
-        x = torch.sigmoid(self.sigma * (x + self.delta/2)) - torch.sigmoid(self.sigma * (x - self.delta/2))
-        x = x.sum(dim=-1) + 1e-6 # epsilon for zero bins
-        x = x / x.sum(dim=-1).unsqueeze(1)
-
-        return x
-
-
-
 def convert(value):
     try:
         value = int(value)
