@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=04:00:00
+#SBATCH --time=06:00:00
 #SBATCH --mem-per-cpu=4G
 #SBATCH --gres=gpu:1
 #SBATCH --exclude=dgx[1-7]
