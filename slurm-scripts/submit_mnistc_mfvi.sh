@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=05:00:00
+#SBATCH --time=04:00:00
 #SBATCH --mem-per-cpu=4G
 #SBATCH --gres=gpu:1
 #SBATCH --exclude=dgx[1-7]
@@ -27,29 +27,17 @@ python train.py \
     --batch-size 256 \
     --mc-samples 32 \
     --outdir $OUTDIR \
-    --prefix mfvi-nw-$SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-nw-$SLURM_ARRAY_TASK_ID
 
 python train.py \
-    --method $METHOD \
+    --method $METHOD --params lam_kl=0.001 \
     --dataset BinaryMNISTC --ds-params labels=53,corruption=identity \
     --model LeNet \
     --max-steps $MAX_STEPS \
     --batch-size 256 \
     --mc-samples 32 \
-    --lam-kl 0.001 \
     --outdir $OUTDIR \
-    --prefix mfvi-lamkl00010-nw-$SLURM_ARRAY_TASK_ID
-
-python train.py \
-    --method $METHOD \
-    --dataset BinaryMNISTC --ds-params labels=53,corruption=identity \
-    --model LeNet \
-    --max-steps $MAX_STEPS \
-    --batch-size 256 \
-    --mc-samples 32 \
-    --lam-kl 0.01 \
-    --outdir $OUTDIR \
-    --prefix mfvi-lamkl00100-nw-$SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-lamkl00010-nw-$SLURM_ARRAY_TASK_ID
 
 python train.py \
     --method $METHOD \
@@ -60,99 +48,18 @@ python train.py \
     --mc-samples 32 \
     --wt-loss \
     --outdir $OUTDIR \
-    --prefix mfvi-wt-$SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-wt-$SLURM_ARRAY_TASK_ID
 
 python train.py \
-    --method $METHOD \
+    --method $METHOD --params lam_kl=0.001 \
     --dataset BinaryMNISTC --ds-params labels=53,corruption=identity \
     --model LeNet \
     --max-steps $MAX_STEPS \
     --batch-size 256 \
     --mc-samples 32 \
     --wt-loss \
-    --lam-kl 0.001 \
     --outdir $OUTDIR \
-    --prefix mfvi-lamkl00010-wt-$SLURM_ARRAY_TASK_ID
-
-python train.py \
-    --method $METHOD \
-    --dataset BinaryMNISTC --ds-params labels=53,corruption=identity \
-    --model LeNet \
-    --max-steps $MAX_STEPS \
-    --batch-size 256 \
-    --mc-samples 32 \
-    --wt-loss \
-    --lam-kl 0.01 \
-    --outdir $OUTDIR \
-    --prefix mfvi-lamkl00100-wt-$SLURM_ARRAY_TASK_ID
-# ==========================================================================================
-
-python train.py \
-    --method $METHOD \
-    --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.05 \
-    --model LeNet \
-    --max-steps $MAX_STEPS \
-    --batch-size 256 \
-    --mc-samples 32 \
-    --outdir $OUTDIR \
-    --prefix mfvi-im00500-nw-$SLURM_ARRAY_TASK_ID
-
-python train.py \
-    --method $METHOD \
-    --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.05 \
-    --model LeNet \
-    --max-steps $MAX_STEPS \
-    --batch-size 256 \
-    --mc-samples 32 \
-    --lam-kl 0.001 \
-    --outdir $OUTDIR \
-    --prefix mfvi-im00500-lamkl00010-nw-$SLURM_ARRAY_TASK_ID
-
-python train.py \
-    --method $METHOD \
-    --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.05 \
-    --model LeNet \
-    --max-steps $MAX_STEPS \
-    --batch-size 256 \
-    --mc-samples 32 \
-    --lam-kl 0.01 \
-    --outdir $OUTDIR \
-    --prefix mfvi-im00500-lamkl00100-nw-$SLURM_ARRAY_TASK_ID
-
-python train.py \
-    --method $METHOD \
-    --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.05 \
-    --model LeNet \
-    --max-steps $MAX_STEPS \
-    --batch-size 256 \
-    --mc-samples 32 \
-    --wt-loss \
-    --outdir $OUTDIR \
-    --prefix mfvi-im00500-wt-$SLURM_ARRAY_TASK_ID
-
-python train.py \
-    --method $METHOD \
-    --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.05 \
-    --model LeNet \
-    --max-steps $MAX_STEPS \
-    --batch-size 256 \
-    --mc-samples 32 \
-    --wt-loss \
-    --lam-kl 0.001 \
-    --outdir $OUTDIR \
-    --prefix mfvi-im00500-lamkl00010-wt-$SLURM_ARRAY_TASK_ID
-
-python train.py \
-    --method $METHOD \
-    --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.05 \
-    --model LeNet \
-    --max-steps $MAX_STEPS \
-    --batch-size 256 \
-    --mc-samples 32 \
-    --wt-loss \
-    --lam-kl 0.01 \
-    --outdir $OUTDIR \
-    --prefix mfvi-im00500-lamkl00100-wt-$SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-lamkl00010-wt-$SLURM_ARRAY_TASK_ID
 # ==========================================================================================
 
 python train.py \
@@ -163,29 +70,17 @@ python train.py \
     --batch-size 256 \
     --mc-samples 32 \
     --outdir $OUTDIR \
-    --prefix mfvi-im00100-nw-$SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-nw-$SLURM_ARRAY_TASK_ID
 
 python train.py \
-    --method $METHOD \
+    --method $METHOD --params lam_kl=0.001 \
     --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.01 \
     --model LeNet \
     --max-steps $MAX_STEPS \
     --batch-size 256 \
     --mc-samples 32 \
-    --lam-kl 0.001 \
     --outdir $OUTDIR \
-    --prefix mfvi-im00100-lamkl00010-nw-$SLURM_ARRAY_TASK_ID
-
-python train.py \
-    --method $METHOD \
-    --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.01 \
-    --model LeNet \
-    --max-steps $MAX_STEPS \
-    --batch-size 256 \
-    --mc-samples 32 \
-    --lam-kl 0.01 \
-    --outdir $OUTDIR \
-    --prefix mfvi-im00100-lamkl00100-nw-$SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-lamkl00010-nw-$SLURM_ARRAY_TASK_ID
 
 python train.py \
     --method $METHOD \
@@ -196,31 +91,18 @@ python train.py \
     --mc-samples 32 \
     --wt-loss \
     --outdir $OUTDIR \
-    --prefix mfvi-im00100-wt-$SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-wt-$SLURM_ARRAY_TASK_ID
 
 python train.py \
-    --method $METHOD \
+    --method $METHOD --params lam_kl=0.001 \
     --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.01 \
     --model LeNet \
     --max-steps $MAX_STEPS \
     --batch-size 256 \
     --mc-samples 32 \
     --wt-loss \
-    --lam-kl 0.001 \
     --outdir $OUTDIR \
-    --prefix mfvi-im00100-lamkl00010-wt-$SLURM_ARRAY_TASK_ID
-
-python train.py \
-    --method $METHOD \
-    --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.01 \
-    --model LeNet \
-    --max-steps $MAX_STEPS \
-    --batch-size 256 \
-    --mc-samples 32 \
-    --wt-loss \
-    --lam-kl 0.01 \
-    --outdir $OUTDIR \
-    --prefix mfvi-im00100-lamkl00100-wt-$SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-lamkl00010-wt-$SLURM_ARRAY_TASK_ID
 # ==========================================================================================
 
 python train.py \
@@ -231,29 +113,17 @@ python train.py \
     --batch-size 256 \
     --mc-samples 32 \
     --outdir $OUTDIR \
-    --prefix mfvi-im00050-nw-$SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-nw-$SLURM_ARRAY_TASK_ID
 
 python train.py \
-    --method $METHOD \
+    --method $METHOD --params lam_kl=0.001 \
     --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.005 \
     --model LeNet \
     --max-steps $MAX_STEPS \
     --batch-size 256 \
     --mc-samples 32 \
-    --lam-kl 0.001 \
     --outdir $OUTDIR \
-    --prefix mfvi-im00050-lamkl00010-nw-$SLURM_ARRAY_TASK_ID
-
-python train.py \
-    --method $METHOD \
-    --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.005 \
-    --model LeNet \
-    --max-steps $MAX_STEPS \
-    --batch-size 256 \
-    --mc-samples 32 \
-    --lam-kl 0.01 \
-    --outdir $OUTDIR \
-    --prefix mfvi-im00050-lamkl00100-nw-$SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-lamkl00010-nw-$SLURM_ARRAY_TASK_ID
 
 python train.py \
     --method $METHOD \
@@ -264,29 +134,16 @@ python train.py \
     --mc-samples 32 \
     --wt-loss \
     --outdir $OUTDIR \
-    --prefix mfvi-im00050-wt-$SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-wt-$SLURM_ARRAY_TASK_ID
 
 python train.py \
-    --method $METHOD \
+    --method $METHOD --params lam_kl=0.001 \
     --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.005 \
     --model LeNet \
     --max-steps $MAX_STEPS \
     --batch-size 256 \
     --mc-samples 32 \
     --wt-loss \
-    --lam-kl 0.001 \
     --outdir $OUTDIR \
-    --prefix mfvi-im00050-lamkl00010-wt-$SLURM_ARRAY_TASK_ID
-
-python train.py \
-    --method $METHOD \
-    --dataset BinaryMNISTC --ds-params labels=53,corruption=identity,imbalance=0.005 \
-    --model LeNet \
-    --max-steps $MAX_STEPS \
-    --batch-size 256 \
-    --mc-samples 32 \
-    --wt-loss \
-    --lam-kl 0.01 \
-    --outdir $OUTDIR \
-    --prefix mfvi-im00050-lamkl00100-wt-$SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-lamkl00010-wt-$SLURM_ARRAY_TASK_ID
 # ==========================================================================================
