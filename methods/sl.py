@@ -99,8 +99,6 @@ def compute_beta_prior_params(p0, ea):
 
 
 def compute_sobs(params, dataset):
-    print(params)
-
     # For s_obs
     base_measure = None
 
