@@ -103,14 +103,15 @@ class BinaryMNISTC(DatasetBase):
         # Set sample weight for minority class
         self.n_labels = 2 # Binary dataset
         self.n_samples = self.y.shape[0]
-        self.n_minority = idx1.shape[0]
-        self.n_majority = self.n_samples - self.n_minority
-        self.pos_weight = self.n_majority / self.n_minority
+        self.n1 = idx1.shape[0]
+        self.n0 = self.n_samples - self.n1
+        self.pos_weight = self.n0 / self.n1
+        self.n_classes = [self.n0, self.n1]
 
     def __repr__(self):
-        return "MNIST :: {}{}".format(*self.labels) + \
+        return "BInaryMNIST-{} :: {}{}".format(self.corruption, *self.labels) + \
                 "\n    Split                 : {}".format(self.split) + \
                 "\n    X shape               : {}".format(self.x.shape) + \
                 "\n    Y shape               : {}".format(self.y.shape) + \
                 "\n    No.of positive classes: {} ({:.2f}%)".format(
-                    self.n_minority, 100 * self.n_minority / self.n_samples)
+                    self.n1, 100 * self.n1 / self.n_samples)

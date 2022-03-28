@@ -103,7 +103,7 @@ def compute_sobs(params, dataset):
     base_measure = None
 
     if 'auto' in params:
-        p0 = dataset.n_majority / (dataset.n_majority + dataset.n_minority)
+        p0 = dataset.n0 / (dataset.n0 + dataset.n1)
         ea = params.get('ea', p0) # If no Ea, use p0 itself as Ea!
 
         a, b = compute_beta_prior_params(p0, ea)
