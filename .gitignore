@@ -132,3 +132,4 @@ dmypy.json
 # logs folder
 logs/
 zoo/
+figs/
