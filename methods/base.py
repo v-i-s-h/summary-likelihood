@@ -103,3 +103,14 @@ class BaseModel(LightningModule):
             To be implemented in child
         """
         raise NotImplementedError('')
+
+    def sample_predictions(self, x, n=4):
+        """
+            Sample `n` predictions for input `x`
+        """
+        pred_list = []
+        for _ in range(n):
+            ypred, kl_loss = self(x) # kl_loss is same for all predictions
+            pred_list.append(ypred)
+
+        return pred_list, kl_loss
