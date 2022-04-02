@@ -135,9 +135,11 @@ def compute_sobs(params, dataset):
 class SummaryLikelihood(BaseModel):
     def __init__(self, model,
             sobs, alpha=1.0,
-            lam_kl=1.0, lam_sl=1.0, 
+            lam_kl=1.0, lam_sl=1.0, tau=1e-3,
             class_weight=None, mc_samples=32) -> None:
-        
+        # Checks
+        assert tau >= 1e-3 or tau == 0.0, "tau needs to be greater than 1e-3 (or 0.0 to disable annealing"
+
         super().__init__(model, class_weight, mc_samples)
 
         self.lam_kl = lam_kl
@@ -146,12 +148,13 @@ class SummaryLikelihood(BaseModel):
         self.register_buffer(name='sobs', tensor=torch.tensor(sobs))
         self.partitions = len(sobs)
         self.alpha = alpha
+        self.tau = tau # annealing parameter
 
         # Histogram estimator
         self.hist_est = SoftHistogram(bins=self.partitions, 
                         min=0, max=1, sigma=500).to(self.device)
 
-        self.save_hyperparameters(ignore=['model'])
+        self.save_hyperparameters(ignore=['model'], logger=False)
 
 
     def compute_loss(self, y_pred, y, kl_loss):
@@ -188,9 +191,12 @@ class SummaryLikelihood(BaseModel):
         ll_s_obs = torch.distributions.Dirichlet(dirch_params).log_prob(self.sobs)
         
         sl_loss = -1.0 * torch.mean(ll_s_obs) # mean over mc samples
-        annlealing_scale = np.exp(10*(self.trainer.global_step + 1)/self.trainer.max_steps) / np.exp(10)
-        # print(">>", self.trainer.global_step, self.trainer.max_steps, annlealing_scale)
-        scaled_sl_loss = annlealing_scale * self.lam_sl * sl_loss
+        annlealed_scale = (
+                np.exp(self.tau * (self.trainer.global_step + 1) / self.trainer.max_steps) - 1.0 + 1e-5
+            ) / (
+                np.exp(self.tau) - 1.0 + 1e-5
+            ) * self.lam_sl
+        scaled_sl_loss = annlealed_scale * sl_loss
         
         # Total loss
         loss = pred_loss + scaled_sl_loss + scaled_kl_loss
@@ -199,6 +205,7 @@ class SummaryLikelihood(BaseModel):
         self.log('kl_loss', kl_loss.detach())
         self.log('scaled_kl_loss', scaled_kl_loss.detach())
         self.log('sl_loss', sl_loss.detach())
+        self.log('sl_annealed_scale', annlealed_scale)
         self.log('scaled_sl_loss', scaled_sl_loss.detach())
 
         return loss, y_pred
@@ -208,6 +215,7 @@ class SummaryLikelihood(BaseModel):
                 "\n    Model      : {}".format(self.model.__class__.__name__) + \
                 "\n    sobs       : {}".format(self.sobs) + \
                 "\n    alpha      : {}".format(self.alpha) + \
+                "\n    tau        : {}".format(self.tau) + \
                 "\n    lam_kl     : {:.2e}".format(self.lam_kl) + \
                 "\n    lam_sl     : {:.2e}".format(self.lam_sl) + \
                 "\n    class wts  : {}".format(self.class_weight) + \
@@ -230,6 +238,7 @@ class SummaryLikelihood(BaseModel):
         N = len(dataset)
         computed_params['lam_kl'] = params.get('lam_kl', 1.0/N)
         computed_params['lam_sl'] = params.get('lam_sl', 1.0/N)
+        computed_params['tau'] = params.get('tau', 1.0)
         
         return computed_params
 
