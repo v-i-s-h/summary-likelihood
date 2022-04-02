@@ -26,8 +26,10 @@ class BaseModel(LightningModule):
         # Metrics
         self.train_accuracy = torchmetrics.Accuracy()
         self.val_accuracy = torchmetrics.Accuracy()
+        self.test_accuracy = torchmetrics.Accuracy()
         self.train_f1score = torchmetrics.F1Score(ignore_index=0)
         self.val_f1score = torchmetrics.F1Score(ignore_index=0)
+        self.test_f1score = torchmetrics.F1Score(ignore_index=0)
 
     def forward(self, x):
         return self.model(x)
@@ -93,7 +95,56 @@ class BaseModel(LightningModule):
             global_step=self.current_epoch,
             bins=10)
 
-        return super().validation_epoch_end(outputs)
+        return None
+
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        
+        ypred = []
+        for i in range(self.mc_samples):
+            _ypred, _kl = self(x)
+            ypred.append(_ypred)
+            kl_loss = _kl # KL loss is same for all samples
+        
+        val_loss, ypred = self.compute_loss(ypred, y, kl_loss)
+        preds = torch.argmax(ypred, dim=1)
+        
+        self.log('test_loss', val_loss.detach())
+
+        # Compute metrics
+        self.test_accuracy.update(preds, y)
+        self.test_f1score.update(preds, y)
+
+        return {
+            'loss': val_loss,
+            'ypred': ypred
+        }
+
+    def test_epoch_end(self, outputs):
+
+        test_acc = self.test_accuracy.compute()
+        test_f1 = self.test_f1score.compute()
+
+        self.log('test_acc', test_acc, prog_bar=True)
+        self.log('test_f1', test_f1, prog_bar=True)
+
+        # Log histogram of predictions
+        ypred = torch.cat([o['ypred'] for o in outputs], dim=0)
+        self.logger.experiment.add_histogram(
+            'test_y_pred', torch.exp(ypred[:, 1]), # only for label 1
+            global_step=self.current_epoch,
+            bins=10)
+
+        # # Save the results along with hparams
+        # self.logger.log_hyperparams(
+        #     params = self.hparams,
+        #     metrics = {
+        #         'test_acc': test_acc,
+        #         'test_f1': test_f1
+        #     }
+        # )
+
+        return None
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=0.001)

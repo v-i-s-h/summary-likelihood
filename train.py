@@ -76,7 +76,8 @@ def run_experiment(
     testset = DatasetClass(**ds_params, split='test', transform=x_transform)
 
     tr_loader = DataLoader(dataset=trainset, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(dataset=testset,  batch_size=batch_size, shuffle=False)
+    val_loader = DataLoader(dataset=testset, batch_size=8*batch_size, shuffle=False)
+    test_loader = DataLoader(dataset=testset,  batch_size=8*batch_size, shuffle=False)
 
     N = len(trainset)
     K = trainset.n_labels
@@ -100,10 +101,11 @@ def run_experiment(
     method_params = MethodClass.populate_missing_params(method_params, trainset)
     pl_model = MethodClass(model, **method_params, class_weight=w, mc_samples=mc_samples)
 
-    tb_logger = pl_loggers.TensorBoardLogger(outdir)
+    tb_logger = pl_loggers.TensorBoardLogger(outdir, name="", version="tblog")
     tb_logger.log_hyperparams(pl_model.hparams)
     ckp_cb = ModelCheckpoint(outdir, 
-                save_last=True, save_top_k=1, monitor='val_f1',
+                save_last=True, 
+                save_top_k=1, monitor='val_f1', mode='max',
                 filename="{step:05d}")
 
     trainer = Trainer(
@@ -112,10 +114,12 @@ def run_experiment(
         logger=tb_logger,
         callbacks=[ckp_cb],
         enable_progress_bar=not disable_pbar,
+        num_sanity_val_steps=0, # avoid running validation on start
         log_every_n_steps=10
     )
 
-    trainer.fit(pl_model, tr_loader, test_loader)
+    trainer.fit(pl_model, tr_loader, val_loader)
+    trainer.test(pl_model, test_loader, verbose=False)
 
 
 def main():
