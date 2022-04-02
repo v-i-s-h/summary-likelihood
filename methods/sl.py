@@ -186,8 +186,11 @@ class SummaryLikelihood(BaseModel):
         yscore_hist = self.hist_est(yscore_samples)
         dirch_params = self.alpha * yscore_hist
         ll_s_obs = torch.distributions.Dirichlet(dirch_params).log_prob(self.sobs)
+        
         sl_loss = -1.0 * torch.mean(ll_s_obs) # mean over mc samples
-        scaled_sl_loss = self.lam_sl * sl_loss
+        annlealing_scale = np.exp(10*(self.trainer.global_step + 1)/self.trainer.max_steps) / np.exp(10)
+        # print(">>", self.trainer.global_step, self.trainer.max_steps, annlealing_scale)
+        scaled_sl_loss = annlealing_scale * self.lam_sl * sl_loss
         
         # Total loss
         loss = pred_loss + scaled_sl_loss + scaled_kl_loss
