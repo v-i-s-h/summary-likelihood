@@ -26,3 +26,5 @@ Exmaple: See [slurm script](./slurm-scripts/submit_mnistc_sl.sh).
 2. Pytorch Lightning
 3. Tensorboard
 4. Scipy
+5. tbparse
+
