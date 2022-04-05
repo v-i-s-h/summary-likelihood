@@ -10,7 +10,6 @@ from datetime import datetime
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-import transforms
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -19,6 +18,7 @@ from pytorch_lightning import loggers as pl_loggers
 import models
 import datasets
 import methods
+import transforms
 from utils import parse_params_str
 import config as cfg
 
