@@ -1,6 +1,5 @@
 # Dataset for MNIST C dataset
 
-from multiprocessing.sharedctypes import Value
 import os
 import numpy as np
 from .dataset import DatasetBase
