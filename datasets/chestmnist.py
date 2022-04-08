@@ -57,28 +57,28 @@ class ChestMNIST(DatasetBase):
         if self.split == 'train':
             self.x = npz_file['train_images']
             if self.label_idx is not None:
-                self.y = npz_file['train_labels'][:, self.label_idx].astype(float)
+                self.y = npz_file['train_labels'][:, self.label_idx]
             else:
-                self.y = npz_file['train_labels'].astype(float)
+                self.y = npz_file['train_labels']
         elif self.split == 'val':
             self.x = npz_file['val_images']
             if self.label_idx is not None:
-                self.y = npz_file['val_labels'][:, self.label_idx].astype(float)
+                self.y = npz_file['val_labels'][:, self.label_idx]
             else:
-                self.y = npz_file['val_labels'].astype(float)
+                self.y = npz_file['val_labels']
         elif self.split == 'test':
             self.x = npz_file['test_images']
             if self.label_idx is not None:
-                self.y = npz_file['test_labels'][:, self.label_idx].astype(float)
+                self.y = npz_file['test_labels'][:, self.label_idx]
             else:
-                self.y = npz_file['test_labels'].astype(float)
+                self.y = npz_file['test_labels']
         else:
             raise ValueError
 
         # Set sample weight for minority class
         self.n_labels = 2
         self.n_samples = self.y.shape[0]
-        self.n1 = self.y.sum().astype(int)
+        self.n1 = int(self.y.sum())
         self.n0 = self.n_samples - self.n1
         self.pos_weight = self.n0 / self.n1
         self.n_classes = [self.n0, self.n1]
