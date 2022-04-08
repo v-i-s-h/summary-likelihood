@@ -87,8 +87,8 @@ def run_experiment(
 
     # Check for weighted loss function
     if wt_loss:
-        print("INFO: Using weighted loss function.")
         w = [1.0, trainset.pos_weight]
+        print("INFO: Using weighted loss function.      w =", w)
     else:
         w = None
 
