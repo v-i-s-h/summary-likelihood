@@ -138,7 +138,7 @@ def main():
     # Dataset related
     parser.add_argument('--dataset', type=str, required=True,
             help='Datasets to train eval.')
-    parser.add_argument('--ds-params', type=str, required=True,
+    parser.add_argument('--ds-params', type=str, required=False,
             help="Additional params for dataset in param1=val1,param2=val2,... format")
     parser.add_argument('--transform', type=str, required=False,
             default='normalize_x',
