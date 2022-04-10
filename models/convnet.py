@@ -27,6 +27,7 @@ class ConvNet(nn.Module):
             posterior_mu_init=posterior_mu_init,
             posterior_rho_init=posterior_rho_init,
         )
+        self.bn1 = nn.BatchNorm2d(num_features=16)
 
         self.conv2 = Conv2dReparameterization(
             in_channels=16,
@@ -38,6 +39,7 @@ class ConvNet(nn.Module):
             posterior_mu_init=posterior_mu_init,
             posterior_rho_init=posterior_rho_init,
         )
+        self.bn2 = nn.BatchNorm2d(num_features=16)
 
         self.conv3 = Conv2dReparameterization(
             in_channels=16,
@@ -49,6 +51,7 @@ class ConvNet(nn.Module):
             posterior_mu_init=posterior_mu_init,
             posterior_rho_init=posterior_rho_init,
         )
+        self.bn3 = nn.BatchNorm2d(num_features=64)
 
         self.conv4 = Conv2dReparameterization(
             in_channels=64,
@@ -60,6 +63,7 @@ class ConvNet(nn.Module):
             posterior_mu_init=posterior_mu_init,
             posterior_rho_init=posterior_rho_init,
         )
+        self.bn4 = nn.BatchNorm2d(num_features=64)
 
         self.conv5 = Conv2dReparameterization(
             in_channels=64,
@@ -72,8 +76,8 @@ class ConvNet(nn.Module):
             posterior_mu_init=posterior_mu_init,
             posterior_rho_init=posterior_rho_init,
         )
+        self.bn5 = nn.BatchNorm2d(num_features=64)
 
-        # Fully connected network :: (64*4*4) => 1
         self.fc1 = LinearReparameterization(
             in_features=64 * 4 * 4,
             out_features=128,
@@ -106,23 +110,28 @@ class ConvNet(nn.Module):
         
         x, kl = self.conv1(x)
         kl_sum += kl
+        x = self.bn1(x)
         x = F.relu(x)
 
         x, kl = self.conv2(x)
         kl_sum += kl
+        x = self.bn2(x)
         x = F.relu(x)
         x = F.max_pool2d(x, 2)
 
         x, kl = self.conv3(x)
         kl_sum += kl
+        x = self.bn3(x)
         x = F.relu(x)
 
         x, kl = self.conv4(x)
         kl_sum += kl
+        x = self.bn4(x)
         x = F.relu(x)
 
         x, kl = self.conv5(x)
         kl_sum += kl
+        x = self.bn5(x)
         x = F.relu(x)
         x = F.max_pool2d(x, 2)
 
