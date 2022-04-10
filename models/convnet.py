@@ -105,6 +105,8 @@ class ConvNet(nn.Module):
             posterior_rho_init=posterior_rho_init,
         )
 
+        self.num_classes = K
+
     def forward(self, x):
         kl_sum = 0.0
         

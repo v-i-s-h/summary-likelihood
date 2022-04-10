@@ -7,6 +7,8 @@ class ResNet20(ResNet):
     def __init__(self, K=10):
         super().__init__(BasicBlock, [3, 3, 3], num_classes=K)
 
+        self.num_classes = K
+
     def forward(self, x):
         x, kl_sum = super().forward(x)
 
