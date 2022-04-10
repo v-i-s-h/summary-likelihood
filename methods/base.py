@@ -27,9 +27,14 @@ class BaseModel(LightningModule):
         self.train_accuracy = torchmetrics.Accuracy()
         self.val_accuracy = torchmetrics.Accuracy()
         self.test_accuracy = torchmetrics.Accuracy()
-        self.train_f1score = torchmetrics.F1Score(ignore_index=0)
-        self.val_f1score = torchmetrics.F1Score(ignore_index=0)
-        self.test_f1score = torchmetrics.F1Score(ignore_index=0)
+
+        if self.model.num_classes == 2:
+            ignore_index = 0
+        else:
+            ignore_index = None
+        self.train_f1score = torchmetrics.F1Score(ignore_index=ignore_index)
+        self.val_f1score = torchmetrics.F1Score(ignore_index=ignore_index)
+        self.test_f1score = torchmetrics.F1Score(ignore_index=ignore_index)
 
     def forward(self, x):
         return self.model(x)
@@ -90,10 +95,19 @@ class BaseModel(LightningModule):
 
         # Log histogram of predictions
         ypred = torch.cat([o['ypred'] for o in outputs], dim=0)
-        self.logger.experiment.add_histogram(
-            'y_pred', torch.exp(ypred[:, 1]), # only for label 1
-            global_step=self.current_epoch,
-            bins=10)
+        if self.model.num_classes == 2:
+            # For binary classification, only log score for class 1
+            self.logger.experiment.add_histogram(
+                'y_pred', torch.exp(ypred[:, 1]), # only for label 1
+                global_step=self.current_epoch,
+                bins=10)
+        else:
+            for i in range(self.model.num_classes):
+                self.logger.experiment.add_histogram(
+                    'y_pred_{:02d}'.format(i), 
+                    torch.exp(ypred[:, i]), # for label `i`
+                    global_step=self.current_epoch,
+                    bins=10)
 
         return None
 
@@ -130,19 +144,19 @@ class BaseModel(LightningModule):
 
         # Log histogram of predictions
         ypred = torch.cat([o['ypred'] for o in outputs], dim=0)
-        self.logger.experiment.add_histogram(
-            'test_y_pred', torch.exp(ypred[:, 1]), # only for label 1
-            global_step=self.current_epoch,
-            bins=10)
-
-        # # Save the results along with hparams
-        # self.logger.log_hyperparams(
-        #     params = self.hparams,
-        #     metrics = {
-        #         'test_acc': test_acc,
-        #         'test_f1': test_f1
-        #     }
-        # )
+        if self.model.num_classes == 2:
+            # For binary classification, only log score for class 1
+            self.logger.experiment.add_histogram(
+                'y_pred_test', torch.exp(ypred[:, 1]), # only for label 1
+                global_step=self.current_epoch,
+                bins=10)
+        else:
+            for i in range(self.model.num_classes):
+                self.logger.experiment.add_histogram(
+                    'y_pred_test_{:02d}'.format(i), 
+                    torch.exp(ypred[:, i]), # for label `i`
+                    global_step=self.current_epoch,
+                    bins=10)
 
         return None
 
