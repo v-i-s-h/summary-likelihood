@@ -1,2 +1,3 @@
 from .mnist_c import BinaryMNISTC
 from .chestmnist import ChestMNIST
+from .cifar10 import CIFAR10
