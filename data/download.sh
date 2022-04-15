@@ -13,5 +13,16 @@ rm mnist_c.zip
 echo "Downloading ChestMNIST"
 curl -o chestmnist.npz https://zenodo.org/record/5208230/files/chestmnist.npz
 
+# BloodMNIST
+echo "Downloading BloodMNIST"
+curl -o bloodmnist.npz https://zenodo.org/record/5208230/files/bloodmnist.npz
+
+# PathMNIST
+echo "Downloading PathMNIST"
+curl -o pathmnist.npz https://zenodo.org/record/5208230/files/pathmnist.npz
+
+# TissueMNIST
+echo "Downloading TissueMNIST"
+curl -o tissuemnist.npz https://zenodo.org/record/5208230/files/tissuemnist.npz
 
 cd $PREV_DIR
