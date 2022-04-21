@@ -133,6 +133,10 @@ dmypy.json
 logs/
 zoo/
 figs/
+*.err
+*.out
+*.pkl
+*.pth
 
 # Pretrained
 pretrained/
