@@ -5,6 +5,7 @@
 import os
 import json
 import argparse
+import copy
 from datetime import datetime
 
 import torch
@@ -73,7 +74,11 @@ def run_experiment(
     # Load dataset
     DatasetClass = getattr(datasets, dataset)
     trainset = DatasetClass(**ds_params, split='train', transform=x_transform)
-    testset = DatasetClass(**ds_params, split='test', transform=x_transform)
+    # Ignore size constraint for test set
+    _ds_params = copy.deepcopy(ds_params)
+    if 'size' in _ds_params:
+        del _ds_params['size']
+    testset = DatasetClass(**_ds_params, split='test', transform=x_transform)
 
     tr_loader = DataLoader(dataset=trainset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(dataset=testset, batch_size=8*batch_size, shuffle=False)
