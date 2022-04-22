@@ -135,7 +135,7 @@ def compute_sobs(params, dataset):
 class SummaryLikelihood(BaseModel):
     def __init__(self, model,
             sobs, alpha=1.0,
-            lam_kl=1.0, lam_sl=1.0, tau=1e-3,
+            lam_kl=1.0, lam_sl=1.0, tau=0.0,
             class_weight=None, mc_samples=32) -> None:
         # Checks
         assert tau >= 1e-3 or tau == 0.0, "tau needs to be greater than 1e-3 (or 0.0 to disable annealing"
