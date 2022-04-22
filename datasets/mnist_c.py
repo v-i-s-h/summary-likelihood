@@ -1,5 +1,6 @@
 # Dataset for MNIST C dataset
 
+from multiprocessing.sharedctypes import Value
 import os
 import numpy as np
 from .dataset import DatasetBase
@@ -35,6 +36,7 @@ class BinaryMNISTC(DatasetBase):
             split,
             imbalance=None,
             transform=None,
+            size=None,
             root=os.path.abspath(os.path.join(
                     os.path.dirname(os.path.realpath(__file__)), 
                     "./../data/"))):
@@ -84,7 +86,15 @@ class BinaryMNISTC(DatasetBase):
             else:
                 print("WARNING: Not enough samples to get target imbalance.")
 
-        idx = np.sort(np.hstack((idx0, idx1))) # index of selected samples
+        idx = np.hstack((idx0, idx1))
+        if size is not None:
+            if idx.shape[0] > size:
+                idx = np.random.choice(idx, size=size, replace=False)
+            else:
+                raise ValueError("Not enough samples ({}) for target dataset size ({})".format(
+                    idx.shape[0], size
+                ))
+        idx = np.sort(idx) # index of selected samples
         
         self.x = np.float32(x[idx])
         self.y = y[idx]
