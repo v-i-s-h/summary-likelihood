@@ -36,6 +36,10 @@ class BaseModel(LightningModule):
         self.val_f1score = torchmetrics.F1Score(ignore_index=ignore_index)
         self.test_f1score = torchmetrics.F1Score(ignore_index=ignore_index)
 
+        self.train_ece = torchmetrics.CalibrationError(n_bins=10, norm='l1')
+        self.val_ece = torchmetrics.CalibrationError(n_bins=10, norm='l1')
+        self.test_ece = torchmetrics.CalibrationError(n_bins=10, norm='l1')
+
     def forward(self, x):
         return self.model(x)
 
@@ -50,18 +54,21 @@ class BaseModel(LightningModule):
         
         loss, ypred = self.compute_loss(ypred, y, kl_loss)
         preds = torch.argmax(ypred, dim=1)
+        pred_prob = torch.exp(ypred)
         
         self.log('train_loss', loss.detach())
 
         # Compute metrics
         self.train_accuracy.update(preds, y)
         self.train_f1score.update(preds, y)
+        self.train_ece.update(pred_prob, y)
 
         return loss
 
     def on_train_epoch_end(self):
         self.log('train_acc', self.train_accuracy, prog_bar=True)
         self.log('train_f1', self.train_f1score, prog_bar=True)
+        self.log('train_ece', self.train_ece, prog_bar=True)
 
         return super().on_train_epoch_end()
 
@@ -76,12 +83,14 @@ class BaseModel(LightningModule):
         
         val_loss, ypred = self.compute_loss(ypred, y, kl_loss)
         preds = torch.argmax(ypred, dim=1)
+        pred_prob = torch.exp(ypred)
         
         self.log('val_loss', val_loss.detach())
 
         # Compute metrics
         self.val_accuracy.update(preds, y)
         self.val_f1score.update(preds, y)
+        self.val_ece.update(pred_prob, y)
 
         return {
             'loss': val_loss,
@@ -92,6 +101,7 @@ class BaseModel(LightningModule):
 
         self.log('val_acc', self.val_accuracy, prog_bar=True)
         self.log('val_f1', self.val_f1score, prog_bar=True)
+        self.log('val_ece', self.val_ece, prog_bar=True)
 
         # Log histogram of predictions
         ypred = torch.cat([o['ypred'] for o in outputs], dim=0)
@@ -122,12 +132,14 @@ class BaseModel(LightningModule):
         
         val_loss, ypred = self.compute_loss(ypred, y, kl_loss)
         preds = torch.argmax(ypred, dim=1)
+        pred_prob = torch.exp(ypred)
         
         self.log('test_loss', val_loss.detach())
 
         # Compute metrics
         self.test_accuracy.update(preds, y)
         self.test_f1score.update(preds, y)
+        self.test_ece.update(pred_prob, y)
 
         return {
             'loss': val_loss,
@@ -138,9 +150,11 @@ class BaseModel(LightningModule):
 
         test_acc = self.test_accuracy.compute()
         test_f1 = self.test_f1score.compute()
+        test_ece = self.test_ece.compute()
 
         self.log('test_acc', test_acc, prog_bar=True)
         self.log('test_f1', test_f1, prog_bar=True)
+        self.log('test_ece', test_ece, prog_bar=True)
 
         # Log histogram of predictions
         ypred = torch.cat([o['ypred'] for o in outputs], dim=0)
