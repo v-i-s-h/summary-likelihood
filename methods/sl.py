@@ -238,9 +238,10 @@ class SummaryLikelihood(BaseModel):
             mc_y_pred = torch.stack([_y[:, 1] for _y in mc_y_pred])
         else:
             mc_y_pred = torch.cat(mc_y_pred)
+            # mc_y_pred += 1 # To avoid Dirichlet parameter going to 0
         yscore_samples = torch.exp(mc_y_pred) # y_pred are log_soft of label 1
         yscore_hist = self.hist_est(yscore_samples)
-        dirch_params = self.alpha * yscore_hist
+        dirch_params = self.alpha * yscore_hist + 1e-3 # To avoid Dirich params -> 0
         ll_s_obs = torch.distributions.Dirichlet(dirch_params).log_prob(self.sobs)
         
         sl_loss = -1.0 * torch.mean(ll_s_obs) # mean over mc samples
