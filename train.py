@@ -196,7 +196,9 @@ def main():
     # base_params = parse_params_str(base_params)
     method_params = parse_params_str(method_params)
 
-    dataset_str = dataset + '-' + '-'.join([str(v) for _, v in ds_params.items()])
+    dataset_str = dataset 
+    if ds_params:
+        dataset_str += '-' + '-'.join([str(v) for _, v in ds_params.items()])
 
     outdir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             args.outdir, 
