@@ -36,7 +36,7 @@ class BaseModel(LightningModule):
         self.val_f1score = torchmetrics.F1Score(ignore_index=ignore_index)
         self.test_f1score = torchmetrics.F1Score(ignore_index=ignore_index)
 
-        self.train_ece = torchmetrics.CalibrationError(n_bins=10, norm='l1')
+        # self.train_ece = torchmetrics.CalibrationError(n_bins=10, norm='l1')
         self.val_ece = torchmetrics.CalibrationError(n_bins=10, norm='l1')
         self.test_ece = torchmetrics.CalibrationError(n_bins=10, norm='l1')
 
@@ -61,14 +61,14 @@ class BaseModel(LightningModule):
         # Compute metrics
         self.train_accuracy.update(preds, y)
         self.train_f1score.update(preds, y)
-        self.train_ece.update(pred_prob, y)
+        # self.train_ece.update(pred_prob, y)
 
         return loss
 
     def on_train_epoch_end(self):
         self.log('train_acc', self.train_accuracy, prog_bar=True)
         self.log('train_f1', self.train_f1score, prog_bar=True)
-        self.log('train_ece', self.train_ece, prog_bar=True)
+        # self.log('train_ece', self.train_ece, prog_bar=True)
 
         return super().on_train_epoch_end()
 
