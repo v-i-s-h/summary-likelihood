@@ -46,6 +46,41 @@ class SoftHistogram(nn.Module):
         return x
 
 
+class MultiSoftHistogram(nn.Module):
+    """
+        Create soft histogram from samples
+    """
+    def __init__(self, threshold_1, threshold_2, sigma = 500):
+        """
+        Parameters
+        ----------
+        threshold_1 : float
+            first softmax threshold
+        threshold_2 : float
+            second softmax threshold
+        sigma : float
+            Slope of sigmoid
+        """
+        super().__init__()
+        self.threshold_1 = threshold_1
+        self.threshold_2 = threshold_2
+        self.sigma = sigma
+
+    def forward(self, x):
+        """Computes soft histogram"""
+        high_hist = self.higher_than_threshold_1(x)
+        middle_hist = self.between_threshold_1_and_2(x)
+        low_hist = 1. - high_hist.sum(dim=1).reshape(-1,1) - middle_hist.sum(dim=1).reshape(-1,1)
+
+        return torch.cat((high_hist, middle_hist, low_hist), 1)
+    
+    def higher_than_threshold_1(self,x):
+        return torch.sigmoid(self.sigma * (x - self.threshold_1))
+    
+    def between_threshold_1_and_2(self,x):
+        return torch.sigmoid(self.sigma * (x - self.threshold_2)) - torch.sigmoid(self.sigma * (x - self.threshold_1))
+
+
 def compute_beta_prior_params(p0, ea):
     """
         Compute prior parameter for Beta base measure from proportion
@@ -132,6 +167,18 @@ def compute_sobs(params, dataset):
     return sobs
 
 
+def compute_sobs_multi(params, dataset):
+    """
+        Compute s_obs for multi-class problems
+    """
+    K = dataset.n_labels
+
+    sobs = np.ones(2*K+1) # Uniform in all bins, not uniform in the prediction space
+    sobs = sobs / sobs.sum()
+
+    return sobs
+
+
 class SummaryLikelihood(BaseModel):
     def __init__(self, model,
             sobs, alpha=1.0,
@@ -151,8 +198,11 @@ class SummaryLikelihood(BaseModel):
         self.tau = tau # annealing parameter
 
         # Histogram estimator
-        self.hist_est = SoftHistogram(bins=self.partitions, 
-                        min=0, max=1, sigma=500).to(self.device)
+        if self.model.num_classes == 2:
+            self.hist_est = SoftHistogram(bins=self.partitions, 
+                            min=0, max=1, sigma=500).to(self.device)
+        else:
+            self.hist_est = MultiSoftHistogram(0.90, 0.80).to(self.device)
 
         self.save_hyperparameters(ignore=['model'], logger=False)
 
@@ -184,7 +234,10 @@ class SummaryLikelihood(BaseModel):
         scaled_kl_loss = self.lam_kl * kl_loss
 
         # Calculate psuedo-observation likelihood
-        mc_y_pred = torch.stack([_y[:, 1] for _y in mc_y_pred])
+        if self.model.num_classes == 2:
+            mc_y_pred = torch.stack([_y[:, 1] for _y in mc_y_pred])
+        else:
+            mc_y_pred = torch.cat(mc_y_pred)
         yscore_samples = torch.exp(mc_y_pred) # y_pred are log_soft of label 1
         yscore_hist = self.hist_est(yscore_samples)
         dirch_params = self.alpha * yscore_hist
@@ -230,7 +283,10 @@ class SummaryLikelihood(BaseModel):
         computed_params = {}
 
         # Get sobs
-        sobs = compute_sobs(params, dataset)
+        if dataset.n_labels == 2:
+            sobs = compute_sobs(params, dataset)
+        else:
+            sobs = compute_sobs_multi(params, dataset)
         computed_params['sobs'] = sobs
 
         computed_params['alpha'] = params.get('alpha', 1.0)
@@ -238,7 +294,7 @@ class SummaryLikelihood(BaseModel):
         N = len(dataset)
         computed_params['lam_kl'] = params.get('lam_kl', 1.0/N)
         computed_params['lam_sl'] = params.get('lam_sl', 1.0/N)
-        computed_params['tau'] = params.get('tau', 1.0)
+        computed_params['tau'] = params.get('tau', 0.0)
         
         return computed_params
 
