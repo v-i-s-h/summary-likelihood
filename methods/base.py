@@ -1,6 +1,7 @@
 # Algorithms for training the model
 
 import torch
+from torch.optim.lr_scheduler import OneCycleLR
 
 from pytorch_lightning import LightningModule
 import torchmetrics
@@ -54,7 +55,6 @@ class BaseModel(LightningModule):
         
         loss, ypred = self.compute_loss(ypred, y, kl_loss)
         preds = torch.argmax(ypred, dim=1)
-        pred_prob = torch.exp(ypred)
         
         self.log('train_loss', loss.detach())
 
@@ -87,7 +87,6 @@ class BaseModel(LightningModule):
         
         self.log('val_loss', val_loss.detach())
 
-        # Compute metrics
         self.val_accuracy.update(preds, y)
         self.val_f1score.update(preds, y)
         self.val_ece.update(pred_prob, y)
@@ -176,6 +175,23 @@ class BaseModel(LightningModule):
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=0.001)
+
+    # def configure_optimizers(self):
+    #     optimizer = torch.optim.SGD(
+    #         self.parameters(),
+    #         lr=0.005,
+    #         momentum=0.5
+    #     )
+    #     # scheduler_dict = {
+    #     #     "scheduler": OneCycleLR(
+    #     #         optimizer,
+    #     #         0.01,
+    #     #         total_steps=self.trainer.max_steps
+    #     #     ),
+    #     #     "interval": "step",
+    #     # }
+    #     # return {"optimizer": optimizer, "lr_scheduler": scheduler_dict}
+    #     return optimizer
 
     def compute_loss(self, ypred, y, kl_loss):
         """
