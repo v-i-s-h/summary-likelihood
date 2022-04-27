@@ -8,6 +8,7 @@ import argparse
 import copy
 from datetime import datetime
 
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -176,6 +177,8 @@ def main():
     parser.add_argument('--prefix', type=str, required=False, default=None,
             help="Prefix for model directory")
     parser.set_defaults(use_gpu=True)
+    parser.add_argument('--seed', type=int, required=False, default=None,
+            help="Seed for running experiment")
     
     args = parser.parse_args()
 
@@ -190,6 +193,7 @@ def main():
     wt_loss = args.wt_loss
     mc_samples = args.mc_samples
     use_gpu = args.use_gpu
+    seed = args.seed
 
     # Parse any params
     ds_params = parse_params_str(ds_params)
@@ -218,6 +222,14 @@ def main():
     print("Use GPU          :", use_gpu)
     print("Outdir           :", outdir)
 
+    if seed:
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = True
+        print("INFO: Using seed `{}`.".format(seed))
+
     # Make output dir
     os.makedirs(outdir, exist_ok=True)
 
@@ -234,7 +246,8 @@ def main():
             'max_steps': max_steps,
             'batch_size': batch_size,
             'wt_loss': wt_loss,
-            'mc_samples': mc_samples
+            'mc_samples': mc_samples,
+            'seed': seed
         }, fp, indent=2)
 
     run_experiment(
