@@ -90,7 +90,8 @@ class VGG11(nn.Module):
             "posterior_mu_init": posterior_mu_init,
             "posterior_rho_init": posterior_rho_init,
             "type": "Reparameterization",
-            "moped_enable": False
+            "moped_enable": True,
+            "moped_delta": 0.20
         })
 
         self.num_classes = K
@@ -118,7 +119,8 @@ class VGG13(nn.Module):
             "posterior_mu_init": posterior_mu_init,
             "posterior_rho_init": posterior_rho_init,
             "type": "Reparameterization",
-            "moped_enable": False
+            "moped_enable": True,
+            "moped_delta": 0.20
         })
 
         self.num_classes = K
@@ -146,7 +148,8 @@ class VGG16(nn.Module):
             "posterior_mu_init": posterior_mu_init,
             "posterior_rho_init": posterior_rho_init,
             "type": "Reparameterization",
-            "moped_enable": False
+            "moped_enable": True,
+            "moped_delta": 0.20
         })
 
         self.num_classes = K
@@ -174,7 +177,8 @@ class VGG19(nn.Module):
             "posterior_mu_init": posterior_mu_init,
             "posterior_rho_init": posterior_rho_init,
             "type": "Reparameterization",
-            "moped_enable": False
+            "moped_enable": True,
+            "moped_delta": 0.20
         })
 
         self.num_classes = K
