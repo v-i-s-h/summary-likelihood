@@ -29,5 +29,6 @@ do
         --batch-size 256 \
         --mc-samples 32 \
         --outdir $OUTDIR \
-        --prefix $METHOD-lam$lam_part
+        --prefix $METHOD-lam$lam_part-$SLURM_ARRAY_TASK_ID \
+        --seed $SLURM_ARRAY_TASK_ID
 done
