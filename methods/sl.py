@@ -50,7 +50,7 @@ class MultiSoftHistogram(nn.Module):
     """
         Create soft histogram from samples
     """
-    def __init__(self, threshold_1, threshold_2, sigma = 500):
+    def __init__(self, threshold_1, threshold_2, threshold_3, sigma = 500):
         """
         Parameters
         ----------
@@ -64,7 +64,24 @@ class MultiSoftHistogram(nn.Module):
         super().__init__()
         self.threshold_1 = threshold_1
         self.threshold_2 = threshold_2
+        self.threshold_3 = threshold_3
         self.sigma = sigma
+
+    # def forward(self, x):
+    #     """Computes soft histogram"""
+    #     t1 = torch.sigmoid(self.sigma * (x - self.threshold_1))
+    #     t2 = torch.sigmoid(self.sigma * (x - self.threshold_2))
+    #     t3 = torch.sigmoid(self.sigma * (x - self.threshold_3))
+
+    #     h1 = t1 # > t1
+    #     h2 = t2 - t1 # t2 -- t1
+    #     h3 = t3 - t2 # t3 -- t2
+    #     h4 = 1.0 - t3.sum(dim=1).reshape(-1, 1) # < t3
+
+    #     x = torch.cat((h1, h2, h3, h4), 1)
+    #     x = x.sum(dim=0) / x.sum()
+        
+    #     return x
 
     def forward(self, x):
         """Computes soft histogram"""
@@ -72,7 +89,11 @@ class MultiSoftHistogram(nn.Module):
         middle_hist = self.between_threshold_1_and_2(x)
         low_hist = 1. - high_hist.sum(dim=1).reshape(-1,1) - middle_hist.sum(dim=1).reshape(-1,1)
 
-        return torch.cat((high_hist, middle_hist, low_hist), 1)
+        x = torch.cat((high_hist, middle_hist, low_hist), 1)
+        x = x.sum(dim=0) / x.sum()
+        # print(x.shape, "---------------------------")
+        return x
+
     
     def higher_than_threshold_1(self,x):
         return torch.sigmoid(self.sigma * (x - self.threshold_1))
@@ -173,7 +194,13 @@ def compute_sobs_multi(params, dataset):
     """
     K = dataset.n_labels
 
-    sobs = np.ones(2*K+1) # Uniform in all bins, not uniform in the prediction space
+    # sobs = np.ones(2*K+1) # Uniform in all bins, not uniform in the prediction space
+    sobs = np.concatenate([
+        0.01 * np.ones(K), 
+        0.09 * np.ones(K), 
+        # 0.10 * np.ones(K), 
+        0.90 * K * np.ones(1)
+    ])
     sobs = sobs / sobs.sum()
 
     return sobs
@@ -202,7 +229,7 @@ class SummaryLikelihood(BaseModel):
             self.hist_est = SoftHistogram(bins=self.partitions, 
                             min=0, max=1, sigma=500).to(self.device)
         else:
-            self.hist_est = MultiSoftHistogram(0.90, 0.80).to(self.device)
+            self.hist_est = MultiSoftHistogram(0.95, 0.85, 80).to(self.device)
 
         self.save_hyperparameters(ignore=['model'], logger=False)
 
@@ -238,11 +265,17 @@ class SummaryLikelihood(BaseModel):
             mc_y_pred = torch.stack([_y[:, 1] for _y in mc_y_pred])
         else:
             mc_y_pred = torch.cat(mc_y_pred)
-            # mc_y_pred += 1 # To avoid Dirichlet parameter going to 0
         yscore_samples = torch.exp(mc_y_pred) # y_pred are log_soft of label 1
         yscore_hist = self.hist_est(yscore_samples)
-        dirch_params = self.alpha * yscore_hist + 1e-3 # To avoid Dirich params -> 0
+        dirch_params = self.alpha * yscore_hist + 1e-4 # To avoid Dirich params -> 0
+        
+        # np.set_printoptions(threshold=np.inf, precision=3)
+        # print(dirch_params.detach().cpu().numpy())
+        # print("---------------", dirch_params.shape)
+        
         ll_s_obs = torch.distributions.Dirichlet(dirch_params).log_prob(self.sobs)
+        # raise RuntimeError()
+        
         
         sl_loss = -1.0 * torch.mean(ll_s_obs) # mean over mc samples
         annlealed_scale = (
