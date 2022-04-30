@@ -83,6 +83,9 @@ class VGG11(nn.Module):
             posterior_mu_init=0.0, posterior_rho_init=-3.0):
         super().__init__()
         self.model = VGGBase(make_layers(cfgs['vgg11']), K=K) # build deterministic model
+        # script_dir = os.path.dirname(__file__)
+        # state_dict = torch.load(script_dir + "/state_dicts/vgg11_bn.pt")
+        # self.model.load_state_dict(state_dict)
         # convert to BNN
         dnn_to_bnn(self.model, {
             "prior_mu": prior_mu,
