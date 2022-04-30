@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=24:00:00
+#SBATCH --time=14:00:00
 #SBATCH --mem-per-cpu=16G
 #SBATCH --gres=gpu:1
 #SBATCH --exclude=dgx[1-7]
@@ -14,7 +14,7 @@ source activate bayes
 export DISABLE_PBAR=1
 
 OUTDIR="zoo/abl-alpha100-unibin"
-MAX_STEPS=10000
+MAX_STEPS=3000
 METHOD="sl"
 
 
