@@ -28,7 +28,7 @@ import config as cfg
 def run_experiment(
         method, method_params,
         dataset, ds_params, transform, 
-        model_str, 
+        model_str, model_params,
         max_steps, batch_size,
         wt_loss, 
         mc_samples, 
@@ -51,6 +51,8 @@ def run_experiment(
         Input transformation
     model_str : str
         Model name
+    model_params: dict
+        kwargs for model class
     max_steps : int
         Maximum number of epochs to train
     batch_size : int
@@ -99,7 +101,7 @@ def run_experiment(
         w = None
 
     # Prepare model to train
-    model = ModelClass(K)
+    model = ModelClass(K, **model_params)
 
     MethodClass = getattr(methods, method)
 
@@ -153,6 +155,8 @@ def main():
     # Model related
     parser.add_argument('--model', type=str, required=True,
             help="Model to use. Options: LeNet")
+    parser.add_argument('--model-params', type=str, required=False,
+            help="Additional parameters to be passed to model.")
     
     # Optimization related
     parser.add_argument('--max-steps', type=int, required=False, 
@@ -188,6 +192,7 @@ def main():
     ds_params = args.ds_params
     transform = args.transform
     model = args.model
+    model_params = args.model_params
     max_steps = args.max_steps
     batch_size = args.batch_size
     wt_loss = args.wt_loss
@@ -199,6 +204,7 @@ def main():
     ds_params = parse_params_str(ds_params)
     # base_params = parse_params_str(base_params)
     method_params = parse_params_str(method_params)
+    model_params = parse_params_str(model_params)
 
     dataset_str = dataset 
     if ds_params:
@@ -214,7 +220,7 @@ def main():
     # Print experiment configuration
     print("Method           :", method, method_params)
     print("Dataset          :", dataset, ds_params, transform)
-    print("Model            :", model)
+    print("Model            :", model, model_params)
     print("Max steps        :", max_steps)
     print("Batch size       :", batch_size)
     print("Weighted Loss    :", wt_loss)
@@ -243,6 +249,7 @@ def main():
             'ds_params': ds_params,
             'transform': transform,
             'model': model,
+            'model_params': model_params,
             'max_steps': max_steps,
             'batch_size': batch_size,
             'wt_loss': wt_loss,
@@ -253,7 +260,7 @@ def main():
     run_experiment(
         method, method_params,
         dataset, ds_params, transform, 
-        model, 
+        model, model_params,
         max_steps, batch_size,
         wt_loss, 
         mc_samples, 
