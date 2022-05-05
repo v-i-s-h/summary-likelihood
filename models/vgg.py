@@ -68,6 +68,7 @@ def make_layers(cfg, batch_norm=False):
 
 
 cfgs = {
+    "vgg3": [128, "M", 256, "M", 512, "M"], 
     "vgg11": [64, "M", 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
     "vgg13": [64, 64, "M", 128, 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
     "vgg16": [64, 64, "M", 128, 128, "M", 256, 256, 256, "M", 512, 512, 512, "M", 512,
@@ -75,6 +76,38 @@ cfgs = {
     "vgg19": [64, 64, "M", 128, 128, "M", 256, 256, 256, 256, "M", 512, 512, 512,
             512, "M", 512, 512, 512, 512, "M"],
 }
+
+
+class VGG3(nn.Module):
+    def __init__(self, K=10,
+            prior_mu=0.0, prior_sigma=1.0,
+            posterior_mu_init=0.0, posterior_rho_init=-3.0):
+        super().__init__()
+        self.model = VGGBase(make_layers(cfgs['vgg3']), K=K) # build deterministic model
+        # script_dir = os.path.dirname(__file__)
+        # state_dict = torch.load(script_dir + "/state_dicts/vgg11_bn.pt")
+        # self.model.load_state_dict(state_dict)
+        # convert to BNN
+        dnn_to_bnn(self.model, {
+            "prior_mu": prior_mu,
+            "prior_sigma": prior_sigma,
+            "posterior_mu_init": posterior_mu_init,
+            "posterior_rho_init": posterior_rho_init,
+            "type": "Reparameterization",
+            "moped_enable": True,
+            "moped_delta": 0.20
+        })
+
+        self.num_classes = K
+
+    def forward(self, x, return_kl=True):
+        out = self.model(x)
+
+        if return_kl:
+            kl = get_kl_loss(self.model)
+            return out, kl
+
+        return out
 
 
 class VGG11(nn.Module):
