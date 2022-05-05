@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=24:00:00
+#SBATCH --time=6:00:00
 #SBATCH --mem-per-cpu=16G
 #SBATCH --gres=gpu:1
 #SBATCH --exclude=dgx[1-7]
@@ -18,34 +18,55 @@ MAX_STEPS=3000
 METHOD="sl"
 
 
-for lam in 0.000001 0.00001 0.0001 0.001 0.01 0.1 1.0
+# for lam in 0.000001 0.00001 0.0001 0.001 0.01 0.1 1.0
+# do
+#     lam_part=`printf '%1.0e' $lam`
+#     python train.py \
+#         --method sl --params lam_sl=$lam,alpha=100 \
+#         --dataset CIFAR10 --transform normalize_x_cifar \
+#         --model VGG11 \
+#         --max-steps $MAX_STEPS \
+#         --batch-size 256 \
+#         --mc-samples 32 \
+#         --outdir $OUTDIR \
+#         --prefix $METHOD-lam$lam_part-$SLURM_ARRAY_TASK_ID \
+#         --seed $SLURM_ARRAY_TASK_ID
+# done
+
+
+# # RUN MFVI
+# OUTDIR="zoo/abl-alpha100-unibin-mfvi"
+# MAX_STEPS=3000
+# METHOD="mfvi"
+
+# python train.py \
+#     --method mfvi \
+#     --dataset CIFAR10 --transform normalize_x_cifar \
+#     --model VGG11 \
+#     --max-steps $MAX_STEPS \
+#     --batch-size 256 \
+#     --mc-samples 32 \
+#     --outdir $OUTDIR \
+#     --prefix $METHOD-$SLURM_ARRAY_TASK_ID \
+#     --seed $SLURM_ARRAY_TASK_ID
+
+# MFVI sigma_0 CV
+OUTDIR="zoo/mfvi-cv"
+MAX_STEPS=3000
+METHOD="mfvi"
+
+
+for sigma in 0.10 0.25
 do
-    lam_part=`printf '%1.0e' $lam`
+    sigma_part=`printf '%1.0e' $sigma`
     python train.py \
-        --method sl --params lam_sl=$lam,alpha=100 \
+        --method mfvi \
         --dataset CIFAR10 --transform normalize_x_cifar \
-        --model VGG11 \
+        --model VGG11 --model-params prior_sigma=$sigma \
         --max-steps $MAX_STEPS \
         --batch-size 256 \
         --mc-samples 32 \
         --outdir $OUTDIR \
-        --prefix $METHOD-lam$lam_part-$SLURM_ARRAY_TASK_ID \
+        --prefix $METHOD-sigma$sigma_part-$SLURM_ARRAY_TASK_ID \
         --seed $SLURM_ARRAY_TASK_ID
 done
-
-
-# RUN MFVI
-OUTDIR="zoo/abl-alpha100-unibin-mfvi"
-MAX_STEPS=3000
-METHOD="mfvi"
-
-python train.py \
-    --method mfvi \
-    --dataset CIFAR10 --transform normalize_x_cifar \
-    --model VGG11 \
-    --max-steps $MAX_STEPS \
-    --batch-size 256 \
-    --mc-samples 32 \
-    --outdir $OUTDIR \
-    --prefix $METHOD-$SLURM_ARRAY_TASK_ID \
-    --seed $SLURM_ARRAY_TASK_ID
