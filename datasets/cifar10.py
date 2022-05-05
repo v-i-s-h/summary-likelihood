@@ -58,11 +58,11 @@ class CIFAR10Im(CIFAR10):
         sample_ids = []
         for _idxs in idxs:
             sample_ids.extend(_idxs)
-
+        # Shuffle to break order
+        np.random.shuffle(sample_ids)
+        
         self.ds.data = self.ds.data[sample_ids]
         self.ds.targets = [self.ds.targets[i] for i in sample_ids]
-
-        print(">>>>>>", self.ds.data.shape, len(self.ds.targets))
 
 
 if __name__ == "__main__":
