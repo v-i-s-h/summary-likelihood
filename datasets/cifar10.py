@@ -52,6 +52,8 @@ class CIFAR10Im(CIFAR10):
         # Deterministically select sample indices for each class
         for i in range(K):
             ni = int(np.round(len(idxs[i]) * 2 ** (-i)))
+            if i == K-1:
+                ni *= 2 # Only for last label, keep double the samples.
             idxs[i] = idxs[i][:ni] # Select first `ni` indices
 
         # Flatten into one list
