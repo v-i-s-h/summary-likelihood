@@ -65,6 +65,9 @@ class BinaryMNISTC(DatasetBase):
         if self.split == 'train':
             images_file = os.path.join(self.root, 'mnist_c', self.corruption, 'train_images.npy')
             labels_file = os.path.join(self.root, 'mnist_c', self.corruption, 'train_labels.npy')
+        elif self.split == 'val':
+            images_file = os.path.join(self.root, 'mnist_c', self.corruption, 'train_images.npy')
+            labels_file = os.path.join(self.root, 'mnist_c', self.corruption, 'train_labels.npy')
         elif self.split == 'test':
             images_file = os.path.join(self.root, 'mnist_c', self.corruption, 'test_images.npy')
             labels_file = os.path.join(self.root, 'mnist_c', self.corruption, 'test_labels.npy')
