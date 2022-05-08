@@ -137,6 +137,7 @@ figs/
 *.out
 *.pkl
 *.pth
+*/lightning_logs/*
 
 # Pretrained
 pretrained/
