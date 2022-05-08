@@ -31,14 +31,18 @@ class VGGBase(nn.Module):
         self._initialize_weights()
 
     def forward(self, x):
+        logits = self.get_logits(x)
+        output = F.log_softmax(logits, dim=1)
+
+        return output
+
+    def get_logits(self, x):
         x = self.features(x)
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = self.classifier(x)
+        logits = self.classifier(x)
 
-        output = F.log_softmax(x, dim=1)
-
-        return output
+        return logits
 
     def _initialize_weights(self):
         for m in self.modules():
@@ -134,6 +138,19 @@ class VGG11(nn.Module):
 
     def forward(self, x, return_kl=True):
         out = self.model(x)
+
+        if return_kl:
+            kl = get_kl_loss(self.model)
+            return out, kl
+
+        return out
+
+class VGG11Logits(VGG11):
+    def __init__(self, K=10, prior_mu=0, prior_sigma=1, posterior_mu_init=0, posterior_rho_init=-3):
+        super().__init__(K, prior_mu, prior_sigma, posterior_mu_init, posterior_rho_init)
+
+    def forward(self, x, return_kl=True):
+        out = self.model.get_logits(x)
 
         if return_kl:
             kl = get_kl_loss(self.model)
