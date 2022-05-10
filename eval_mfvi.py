@@ -1,7 +1,7 @@
 # Evaluate model(s) on given dataset
 
 import os
-import sys
+import pickle
 import json
 import glob
 import argparse
@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchmetrics.functional import calibration_error, accuracy
 
-from sklearn.calibration import calibration_curve
+import pandas as pd
 
 import models
 import datasets
@@ -35,15 +35,25 @@ class TScaling():
         return torch.div(logits, self.T)
 
     def fit(self, logits, y_true, sample_weight=None):
-        optimizer = optim.LBFGS([self.T], lr=1e-2, max_iter=10000, line_search_fn='strong_wolfe')
+        optimizer = optim.LBFGS([self.T], lr=1e-2, max_iter=100, line_search_fn='strong_wolfe')
+
+        # ece_pre = F.nll_loss(torch.log(self.predict_proba(logits)), y_true).detach().item()
 
         def _eval():
             loss = F.cross_entropy(self.T_scaling(logits), y_true)
             loss.backward()
-            # print(loss.item(), self.T.item())
+            # print("     ", loss.item(), self.T.item())
             return loss
         
         optimizer.step(_eval)
+
+        # Debug
+        # ece_post = F.nll_loss(torch.log(self.predict_proba(logits)), y_true).detach().item()
+
+        # print("INFO: T    = ", self.T.item())
+        # print("INFO: pre  = {:.5f}".format(ece_pre))
+        # print("INFO: post = {:.5f}".format(ece_post))
+
 
     def predict_proba(self, logits):
         calib_logits = None
@@ -122,16 +132,34 @@ def evaluate_model_calibration(preds, n_bins=10):
     ### Evaluate calibration of testloader
     y_true_test, scores_test, logits_test = preds['test']
     
-    calib_results_un = calibration_error(scores_test, y_true_test, n_bins=n_bins)
-    results['uncalibrated'] = calib_results_un.item()
-    # calib_results_un = evaluate_calibration(y_true_test.cpu().numpy(), scores_test.cpu().numpy())
+    results['nll_uncal_val'] = F.nll_loss(torch.log(scores_val), y_true_val).detach().item()
+    results['nll_uncal_test'] = F.nll_loss(torch.log(scores_test), y_true_test).detach().item()
 
+    calib_results_un = calibration_error(scores_test, y_true_test, n_bins=n_bins, norm='l1')
+    results['ece_uncal'] = calib_results_un.item()
+    
     # T scaling (on logits)
     tscale = TScaling(device=logits_val.device)
     tscale.fit(logits_val, y_true_val)
     scores_tscale = tscale.predict_proba(logits_test)
-    calib_results_tscale = calibration_error(scores_tscale, y_true_test, n_bins=n_bins)
-    results['tscale'] = calib_results_tscale.item()
+    
+    # Evalute calibration results
+    results['nll_cal_test'] = F.nll_loss(
+        torch.log(scores_tscale),
+        y_true_test
+    ).detach().item()
+    results['nll_cal_val'] = F.nll_loss(
+        torch.log(tscale.predict_proba(logits_val)),
+        y_true_val
+    ).detach().item()
+
+    calib_results_tscale = calibration_error(scores_tscale, y_true_test, n_bins=n_bins, norm='l1')
+    results['ece_tscale'] = calib_results_tscale.item()
+    results['T'] = tscale.T.item()
+
+    results['ece_gain'] = results['nll_uncal_test'] - results['nll_cal_test']
+
+    results['acc'] = accuracy(scores_tscale, y_true_test).detach().item()
 
     return results
 
@@ -242,56 +270,42 @@ def main():
     results = []
 
     for i, model_dir in tqdm(enumerate(model_dirs), desc="Models", total=len(model_dirs)):
-        results_file = os.path.join(model_dir, "eval-results.pkl")
+        model_results = []
+        for j in range(5):
+            r = {'model_id': i, 'round': j}
+            _r = evaluate_model_in_dir(model_dir, args.corruption)
+            r.update(_r)
+            model_results.append(r)
+        # Print results
+        # print("Model:", model_dir)
+        # print("    Uncalibrated ECE   : {:.4f}".format(r['uncal']))
+        # print("    ECE after TScaling : {:.4f}".format(r['tscale']))
+        # print("                     T : {:.4f}".format(r['T']))
         
-        r = evaluate_model_in_dir(model_dir, args.corruption)
-        results.append(r)
-        print(r)
+        results_file = os.path.join(model_dir, "calib_results.pkl")
+        with open(results_file, 'wb') as f:
+            pickle.dump(model_results, f)
+        results.extend(model_results)
 
-    #     with open(results_file, 'wb') as fp:
-    #         pickle.dump(r, fp)
+    df_results = pd.DataFrame(results)
+    # Select results where ECE is improved, others are mostly optimization failures
+    df_good = df_results[df_results.ece_gain >= 0.0] 
+    print(df_results)
+    print("---------------------")
+    print(df_good)
+    print("---------------------")
+    # Compute statistics
+    n = df_good.shape[0]
+    mean_uncalib_ece = np.mean(df_good.ece_uncal)
+    mean_calib_ece = np.mean(df_good.ece_tscale)
+    mean_acc = np.mean(df_good.acc)
+    err_uncalib_ece = np.std(df_good.ece_uncal) / np.sqrt(n)
+    err_calib_ece = np.std(df_good.ece_tscale) / np.sqrt(n)
+    err_acc = np.std(df_good.acc) / np.sqrt(n)
 
-    #     # Plot and save the results
-    #     fig_file = os.path.join(model_dir, "results.png")
-    #     fig = make_results_fig(r)
-    #     plt.savefig(fig_file, bbox_inches='tight')
-
-    # # Printout comparison table
-    # print("{:2s} {:<60s}    {:^6s}    {:^6s}    {:^6s}    {:^6s}".format(
-    #     "", "Model", "Acc.", "F1", "AUC", "ECE"))
-    # for i, (m, r) in enumerate(zip(model_dirs, results)):
-    #     print("{:2d} {:<60s}    {:.4f}    {:.4f}    {:.4f}    {:.4f}".format(
-    #         i+1, m, r['acc'], r['f1_score'], r['auc']['auc'], r['calib']['ece']
-    #     ))
-
-    # if len(results) > 1:
-    #     # For more than one results, also produce the summary
-    #     acc_list = [r['acc'] for r in results]
-    #     f1_list = [r['f1_score'] for r in results]
-    #     auc_list = [r['auc']['auc'] for r in results]
-    #     ece_list = [r['calib']['ece'] for r in results]
-
-    #     acc_mean = np.mean(acc_list)
-    #     acc_std  = np.std(acc_list)
-
-    #     f1_mean = np.mean(f1_list)
-    #     f1_std = np.std(f1_list)
-
-    #     auc_mean = np.mean(auc_list)
-    #     auc_std = np.std(auc_list)
-
-    #     ece_mean = np.mean(ece_list)
-    #     ece_std = np.std(ece_list)
-
-    #     print("{:2s} {:<60s}    {:^6s}    {:^6s}    {:^6s}    {:^6s}".format(
-    #         "--", "-"*60, "-"*6, "-"*6, "-"*6, "-"*6
-    #     ))
-    #     print("{:2s} {:<60s}    {:.4f}    {:.4f}    {:.4f}    {:.4f}".format(
-    #         "", "", acc_mean, f1_mean, auc_mean, ece_mean
-    #     ))
-    #     print("{:2s} {:<60s}   ±{:.4f}   ±{:.4f}   ±{:.4f}   ±{:.4f}".format(
-    #         "", "", acc_std, f1_std, auc_std, ece_std
-    #     ))
+    print("ECE (Uncalibrated) = {:.4f} \pm {:.4f}".format(mean_uncalib_ece, err_uncalib_ece))
+    print("ECE (T-Scaling)    = {:.4f} \pm {:.4f}".format(mean_calib_ece, err_calib_ece))
+    print("Accuracy           = {:.4f} \pm {:.4f}".format(mean_acc, err_acc))
 
 
 if __name__ == "__main__":
