@@ -16,6 +16,7 @@ import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+from torch.utils.data.sampler import SubsetRandomSampler
 from torchmetrics.functional import calibration_error, accuracy
 
 import models
@@ -41,6 +42,8 @@ class TScaling():
             return loss
         
         optimizer.step(_eval)
+
+        print("End of fit. T = ", self.T)
 
     def predict_proba(self, logits):
         calib_logits = None
@@ -111,7 +114,7 @@ def evaluate_model(model, valloader, testloader, n_bins=10):
     # print("Acc =", acc)
     results['uncalibrated'] = calib_results_un.item()
 
-    # 4. T scaling (on logits)
+    # T scaling (on logits)
     tscale = TScaling(device=logits_val.device)
     tscale.fit(logits_val, y_true_val)
     scores_tscale = tscale.predict_proba(logits_test)
@@ -128,17 +131,35 @@ def run_evaluation(model_str, ckpt_file, dataset, ds_params, transform, corrupti
     # Load dataset
     DatasetClass = getattr(datasets, dataset)
 
-    # load dataset
-    DatasetClass = getattr(datasets, dataset)
-    test_params = copy.deepcopy(ds_params)
+    # Remove size constraint on test
+    if 'size' in ds_params:
+        del ds_params['size']
     if corruption is not None:
+        test_params = copy.deepcopy(ds_params)
         test_params.update({'corruption': corruption})
-    if 'size' in test_params:
-        del test_params['size']
-    valset = DatasetClass(**ds_params, split='val', transform=x_transform)
-    testset = DatasetClass(**test_params, split='test', transform=x_transform)
-    valloader = DataLoader(dataset=valset, batch_size=64, shuffle=True)
-    testloader = DataLoader(dataset=testset, batch_size=64, shuffle=False)
+        
+        # If testing on a corruption, use entire test set as validation for calibration
+        print("INFO: Testing on corruption. Using entire test set of clean data for calibration")
+        valset = DatasetClass(**ds_params, split='test', transform=x_transform)
+        valloader = DataLoader(dataset=valset, batch_size=64, shuffle=True)
+
+        testset = DatasetClass(**test_params, split='test', transform=x_transform)
+        testloader = DataLoader(dataset=testset, batch_size=64, shuffle=False)
+    else:
+        print("INFO: Using part of test set for calibration")
+        testset = DatasetClass(**ds_params, split='test', transform=x_transform)
+
+        n = len(testset)
+        indices = torch.randperm(n)
+        val_size = int(0.25 * n)
+        val_indices = indices[:val_size]
+        test_indices = indices[val_size:]
+
+        valloader = DataLoader(dataset=testset, batch_size=64, 
+                                sampler=SubsetRandomSampler(val_indices))
+        testloader = DataLoader(dataset=testset, batch_size=64, 
+                                sampler=SubsetRandomSampler(test_indices))
+    
 
     # CUDA config
     device = 'cpu'
@@ -147,7 +168,7 @@ def run_evaluation(model_str, ckpt_file, dataset, ds_params, transform, corrupti
     
     # Build model
     ModelClass = getattr(models, model_str+'Logits')
-    model = ModelClass(valset.n_labels).to(device)
+    model = ModelClass(testset.n_labels).to(device)
     checkpoint = torch.load(ckpt_file)
     # Clean up state dict to have only model params
     state_dict = checkpoint['state_dict']
