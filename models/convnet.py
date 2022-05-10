@@ -1,3 +1,4 @@
+from turtle import forward
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -108,6 +109,12 @@ class ConvNet(nn.Module):
         self.num_classes = K
 
     def forward(self, x):
+        logits, kl_sum = self.get_logits(x)
+        output = F.log_softmax(logits, dim=1)
+
+        return output, kl_sum
+
+    def get_logits(self, x):
         kl_sum = 0.0
         
         x, kl = self.conv1(x)
@@ -149,10 +156,17 @@ class ConvNet(nn.Module):
 
         x, kl = self.fc3(x)
         kl_sum += kl
-        
-        output = F.log_softmax(x, dim=1)
 
-        return output, kl_sum
+        return x, kl_sum
+
+
+class ConvNetLogits(ConvNet):
+    def __init__(self, K=10, prior_mu=0, prior_sigma=np.exp(-1), posterior_mu_init=0, posterior_rho_init=-3):
+        super().__init__(K, prior_mu, prior_sigma, posterior_mu_init, posterior_rho_init)
+
+    def forward(self, x):
+        logits, kl_sum = self.get_logits(x)
+        return logits, kl_sum
 
 
 if __name__ == "__main__":
