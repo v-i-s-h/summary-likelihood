@@ -19,6 +19,8 @@ from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchmetrics.functional import calibration_error, accuracy
 
+from sklearn.calibration import calibration_curve
+
 import models
 import datasets
 import transforms
@@ -27,23 +29,21 @@ import transforms
 class TScaling():
     def __init__(self, device='cpu'):
         self.device = device
-        self.T = nn.Parameter(torch.ones(1).to(device))
+        self.T = nn.Parameter((1.0 * torch.ones(1)).to(device))
 
     def T_scaling(self, logits):
         return torch.div(logits, self.T)
 
     def fit(self, logits, y_true, sample_weight=None):
-        optimizer = optim.LBFGS([self.T], lr=1e-3, max_iter=10000, line_search_fn='strong_wolfe')
+        optimizer = optim.LBFGS([self.T], lr=1e-2, max_iter=10000, line_search_fn='strong_wolfe')
 
         def _eval():
-            loss = F.nll_loss(self.T_scaling(logits), y_true)
+            loss = F.cross_entropy(self.T_scaling(logits), y_true)
             loss.backward()
-
+            # print(loss.item(), self.T.item())
             return loss
         
         optimizer.step(_eval)
-
-        print("End of fit. T = ", self.T)
 
     def predict_proba(self, logits):
         calib_logits = None
@@ -99,20 +99,32 @@ def get_predictions(model, dataloader, msg="Getting predictions"):
     return y_true, scores, logits
 
 
-def evaluate_model(model, valloader, testloader, n_bins=10):
-    # To store results
-    results = {}
-    
+def get_model_predictions(model, valloader, testloader, n_bins=10):
     # Get predictions from validation set and calibrate models
     y_true_val, scores_val, logits_val = get_predictions(model, valloader)
     
     ### Evaluate calibration of testloader
     y_true_test, scores_test, logits_test = get_predictions(model, testloader)
+
+    return {
+        'val': [ y_true_val, scores_val, logits_val],
+        'test': [ y_true_test, scores_test, logits_test]
+    }
+
+
+def evaluate_model_calibration(preds, n_bins=10):
+    # To store results
+    results = {}
+    
+    # Get predictions from validation set and calibrate models
+    y_true_val, scores_val, logits_val = preds['val']
+    
+    ### Evaluate calibration of testloader
+    y_true_test, scores_test, logits_test = preds['test']
     
     calib_results_un = calibration_error(scores_test, y_true_test, n_bins=n_bins)
-    # acc = accuracy(scores_test, y_true_test)
-    # print("Acc =", acc)
     results['uncalibrated'] = calib_results_un.item()
+    # calib_results_un = evaluate_calibration(y_true_test.cpu().numpy(), scores_test.cpu().numpy())
 
     # T scaling (on logits)
     tscale = TScaling(device=logits_val.device)
@@ -141,10 +153,10 @@ def run_evaluation(model_str, ckpt_file, dataset, ds_params, transform, corrupti
         # If testing on a corruption, use entire test set as validation for calibration
         print("INFO: Testing on corruption. Using entire test set of clean data for calibration")
         valset = DatasetClass(**ds_params, split='test', transform=x_transform)
-        valloader = DataLoader(dataset=valset, batch_size=64, shuffle=True)
+        valloader = DataLoader(dataset=valset, batch_size=256, shuffle=True)
 
         testset = DatasetClass(**test_params, split='test', transform=x_transform)
-        testloader = DataLoader(dataset=testset, batch_size=64, shuffle=False)
+        testloader = DataLoader(dataset=testset, batch_size=256, shuffle=False)
     else:
         print("INFO: Using part of test set for calibration")
         testset = DatasetClass(**ds_params, split='test', transform=x_transform)
@@ -155,9 +167,9 @@ def run_evaluation(model_str, ckpt_file, dataset, ds_params, transform, corrupti
         val_indices = indices[:val_size]
         test_indices = indices[val_size:]
 
-        valloader = DataLoader(dataset=testset, batch_size=64, 
+        valloader = DataLoader(dataset=testset, batch_size=256, 
                                 sampler=SubsetRandomSampler(val_indices))
-        testloader = DataLoader(dataset=testset, batch_size=64, 
+        testloader = DataLoader(dataset=testset, batch_size=256, 
                                 sampler=SubsetRandomSampler(test_indices))
     
 
@@ -180,10 +192,12 @@ def run_evaluation(model_str, ckpt_file, dataset, ds_params, transform, corrupti
     model.load_state_dict(model_weights)
     # model.load_state_dict(torch.load(weights_file, map_location=torch.device(device)))
 
-    print(model)
+    # Get predictions from model
+    preds = get_model_predictions(model, valloader, testloader)
+    del model # Free model
 
-    # Evaluate model
-    r = evaluate_model(model, valloader, testloader, n_bins=10)
+
+    r = evaluate_model_calibration(preds, n_bins=10)
 
     return r
 
