@@ -26,6 +26,46 @@ import datasets
 import transforms
 
 
+class TScaling():
+    def __init__(self, device='cpu'):
+        self.device = device
+        self.T = nn.Parameter((1.0 * torch.ones(1)).to(device))
+
+    def T_scaling(self, logits):
+        return torch.div(logits, self.T)
+
+    def fit(self, logits, y_true, sample_weight=None):
+        optimizer = optim.LBFGS([self.T], lr=1e-2, max_iter=100, line_search_fn='strong_wolfe')
+
+        # ece_pre = F.nll_loss(torch.log(self.predict_proba(logits)), y_true).detach().item()
+
+        def _eval():
+            loss = F.cross_entropy(self.T_scaling(logits), y_true)
+            loss.backward()
+            # print("     ", loss.item(), self.T.item())
+            return loss
+        
+        optimizer.step(_eval)
+
+        # Debug
+        # ece_post = F.nll_loss(torch.log(self.predict_proba(logits)), y_true).detach().item()
+
+        # print("INFO: T    = ", self.T.item())
+        # print("INFO: pre  = {:.5f}".format(ece_pre))
+        # print("INFO: post = {:.5f}".format(ece_post))
+
+
+    def predict_proba(self, logits):
+        calib_logits = None
+        with torch.no_grad():
+            calib_logits = self.T_scaling(logits)
+            y_pred = torch.sigmoid(calib_logits)
+
+        y_pred = y_pred.detach()
+
+        return y_pred
+
+
 def get_predictions(model, dataloader, msg="Getting predictions"):
     device = next(model.parameters()).device
     tqdm_params = {
@@ -45,7 +85,7 @@ def get_predictions(model, dataloader, msg="Getting predictions"):
             y = y.to(device)
 
             logits_ = []
-            for mc_run in range(128): # TODO: Adjustable MC sampling
+            for mc_run in range(32): # TODO: Adjustable MC sampling
                 mc_logits, _ = model(x)
                 logits_.append(mc_logits)
 
@@ -98,7 +138,28 @@ def evaluate_model_calibration(preds, n_bins=10):
     calib_results_un = calibration_error(scores_test, y_true_test, n_bins=n_bins, norm='l1')
     results['ece_uncal'] = calib_results_un.item()
     
-    results['acc'] = accuracy(scores_test, y_true_test).detach().item()
+    # T scaling (on logits)
+    tscale = TScaling(device=logits_val.device)
+    tscale.fit(logits_val, y_true_val)
+    scores_tscale = tscale.predict_proba(logits_test)
+    
+    # Evalute calibration results
+    results['nll_cal_test'] = F.nll_loss(
+        torch.log(scores_tscale),
+        y_true_test
+    ).detach().item()
+    results['nll_cal_val'] = F.nll_loss(
+        torch.log(tscale.predict_proba(logits_val)),
+        y_true_val
+    ).detach().item()
+
+    calib_results_tscale = calibration_error(scores_tscale, y_true_test, n_bins=n_bins, norm='l1')
+    results['ece_tscale'] = calib_results_tscale.item()
+    results['T'] = tscale.T.item()
+
+    results['ece_gain'] = results['nll_uncal_test'] - results['nll_cal_test']
+
+    results['acc'] = accuracy(scores_tscale, y_true_test).detach().item()
 
     return results
 
@@ -118,8 +179,7 @@ def run_evaluation(model_str, ckpt_file, dataset, ds_params, transform, corrupti
         test_params.update({'corruption': corruption})
         
         # If testing on a corruption, use entire test set as validation for calibration
-        print("INFO: Testing on corruption {}. "
-            "Using entire test set of clean data for calibration".format(corruption))
+        print("INFO: Testing on corruption. Using entire test set of clean data for calibration")
         valset = DatasetClass(**ds_params, split='test', transform=x_transform)
         valloader = DataLoader(dataset=valset, batch_size=256, shuffle=True)
 
@@ -210,9 +270,8 @@ def main():
     results = []
 
     for i, model_dir in tqdm(enumerate(model_dirs), desc="Models", total=len(model_dirs)):
-        print("INFO: Model -", model_dir)
         model_results = []
-        for j in range(1):
+        for j in range(5):
             r = {'model_id': model_dir, 'round': j}
             _r = evaluate_model_in_dir(model_dir, args.corruption)
             r.update(_r)
@@ -223,26 +282,31 @@ def main():
         # print("    ECE after TScaling : {:.4f}".format(r['tscale']))
         # print("                     T : {:.4f}".format(r['T']))
         if args.corruption is not None:
-            results_file = os.path.join(model_dir, "ece_results_{}.pkl".format(args.corruption))
+            results_file = os.path.join(model_dir, "calib_results_{}.pkl".format(args.corruption))
         else:
-            results_file = os.path.join(model_dir, "ece_results.pkl")
+            results_file = os.path.join(model_dir, "calib_results.pkl")
         with open(results_file, 'wb') as f:
             pickle.dump(model_results, f)
         results.extend(model_results)
 
     df_results = pd.DataFrame(results)
     # Select results where ECE is improved, others are mostly optimization failures
-    df_good = df_results
+    df_good = df_results[df_results.ece_gain >= 0.0] 
+    print(df_results)
+    print("---------------------")
     print(df_good)
     print("---------------------")
     # Compute statistics
     n = df_good.shape[0]
     mean_uncalib_ece = np.mean(df_good.ece_uncal)
+    mean_calib_ece = np.mean(df_good.ece_tscale)
     mean_acc = np.mean(df_good.acc)
     err_uncalib_ece = np.std(df_good.ece_uncal) / np.sqrt(n)
+    err_calib_ece = np.std(df_good.ece_tscale) / np.sqrt(n)
     err_acc = np.std(df_good.acc) / np.sqrt(n)
 
     print("ECE (Uncalibrated) = {:.4f} \pm {:.4f}".format(mean_uncalib_ece, err_uncalib_ece))
+    print("ECE (T-Scaling)    = {:.4f} \pm {:.4f}".format(mean_calib_ece, err_calib_ece))
     print("Accuracy           = {:.4f} \pm {:.4f}".format(mean_acc, err_acc))
 
 
