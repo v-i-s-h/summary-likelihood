@@ -2,3 +2,4 @@ mnist_c/*
 MNIST/*
 *.npz
 cifar-10-batches-py/*
+CIFAR-10-C/*
