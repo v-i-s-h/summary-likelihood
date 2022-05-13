@@ -196,11 +196,11 @@ def compute_sobs_multi(params, dataset):
 
     # sobs = np.ones(2*K+1) # Uniform in all bins, not uniform in the prediction space
     sobs = np.concatenate([
-        0.01 * np.ones(K), 
-        0.09 * np.ones(K), 
+        0.01 * np.ones(K), # Corners of the simplex
+        0.09 * np.ones(K), # second from corner 
         # 0.10 * np.ones(K), 
-        0.90 * K * np.ones(1)
-    ])
+        0.90 * K * np.ones(1) # center region
+    ]) # Change this to reflect class imbalance 
     sobs = sobs / sobs.sum()
 
     return sobs
