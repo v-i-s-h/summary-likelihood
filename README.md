@@ -1,17 +1,14 @@
-# Summary Prior
+# Look beyond labels: Incorporating functional summary information in Bayesian neural networks
 Incorporating summary prior information to Bayesian Deep Learning
 
 ## To start
 ```
-git clone --recursive git@github.com:v-i-s-h/summary-prior.git
-cd summary-prior
+git submodule update --init
 ln -s ./bayesian-torch-repo/bayesian_torch .
 ```
 
-## Corrupted dataset
-
-### Binary MNIST
-![Binary MNIST 3 5](./resources/mnistc_35.png)
+## Incorporating summary information
+![Figure 1](./resources/fig01.png)
 
 
 ## Algorithms
