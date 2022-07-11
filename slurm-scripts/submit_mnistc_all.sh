@@ -38,22 +38,35 @@ case $SLURM_ARRAY_TASK_ID in
 esac
 
 
-for (( i = 1; i <= 5; i++ ))
+# for (( i = 1; i <= 5; i++ ))
+# do
+#     for dssize in 10000 5000 2500 1000
+#     do
+#         for lam in 0.000001 0.00001 0.0001 0.001 0.01 0.1 1.0
+#         do
+#             lam_part=`printf '%1.0e' $lam`
+#             python train.py \
+#                 --method sl --params beta,a=1,b=1,lam_sl=$lam,alpha=100 \
+#                 --dataset BinaryMNISTC --ds-params size=$dssize,labels=53,corruption=$CORRUPTION \
+#                 --model LeNet \
+#                 --max-steps $MAX_STEPS \
+#                 --batch-size 256 \
+#                 --mc-samples 32 \
+#                 --outdir $OUTDIR \
+#                 --prefix $METHOD-lam$lam_part-sz$dssize
+#         done
+#     done
+# done
+
+for dssize in 10000 5000 2500 1000
 do
-    for dssize in 10000 5000 2500 1000
-    do
-        for lam in 0.000001 0.00001 0.0001 0.001 0.01 0.1 1.0
-        do
-            lam_part=`printf '%1.0e' $lam`
-            python train.py \
-                --method sl --params beta,a=1,b=1,lam_sl=$lam,alpha=100 \
-                --dataset BinaryMNISTC --ds-params size=$dssize,labels=53,corruption=$CORRUPTION \
-                --model LeNet \
-                --max-steps $MAX_STEPS \
-                --batch-size 256 \
-                --mc-samples 32 \
-                --outdir $OUTDIR \
-                --prefix $METHOD-lam$lam_part-sz$dssize
-        done
-    done
+        python train.py \
+            --method sl --params beta,a=1,b=1,lam_sl=$lam,alpha=100 \
+            --dataset BinaryMNISTC --ds-params size=$dssize,labels=53,corruption=$CORRUPTION \
+            --model LeNet \
+            --max-steps $MAX_STEPS \
+            --batch-size 256 \
+            --mc-samples 32 \
+            --outdir $OUTDIR \
+            --prefix $METHOD-lam$lam_part-sz$dssize
 done
