@@ -147,7 +147,15 @@ class PredictionLikelihood(BaseModel):
         yscore_samples = torch.exp(mc_y_pred) # y_pred are log_soft of label 1
         
         # log likelihood of predictions wrt to sobs
-        ll_s_obs = self.base_measure.log_prob(yscore_samples)
+        try:
+            ll_s_obs = self.base_measure.log_prob(yscore_samples)
+        except Exception as e:
+            print("************************")
+            print(y_pred)
+            print(mc_y_pred)
+            print(yscore_samples)
+            print("************************")
+            raise e
         # raise RuntimeError("---------------------------------")
 
         
