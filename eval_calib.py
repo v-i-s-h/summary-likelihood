@@ -50,7 +50,8 @@ def get_predictions(model, dataloader, msg="Getting predictions"):
                 logits_.append(mc_logits)
 
             _logits = torch.mean(torch.stack(logits_), dim=0)
-            score = torch.sigmoid(_logits)
+            # score = torch.sigmoid(_logits)
+            score = F.softmax(_logits, dim=1)
 
             if y_true is None:
                 y_true = y.detach()
