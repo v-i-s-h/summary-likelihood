@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=12:00:00
+#SBATCH --time=4:00:00
 #SBATCH --mem-per-cpu=4G
 #SBATCH --gres=gpu:1
 #SBATCH --exclude=dgx[1-7]
@@ -35,22 +35,11 @@ case $SLURM_ARRAY_TASK_ID in
 esac
 
 
-echo "======================== MFVI: BinaryMNIST + LeNet ========================="
-for dssize in 10000 1000
-do
-    basedir="zoo/bmnist53-mfvi/BinaryMNISTC-${dssize}-53-identity/LeNet/"
-    echo ">>>>>>>>>> CORRUPTION: ${CORRUPTION}    SZ = ${dssize}"
-    python eval_calib.py \
-        --models  ${basedir}/mfvi-sz$dssize-*\
-        --corruption $CORRUPTION
-    echo "-----------------------------------------------------------------"
-done
-echo "=========================================================================="
 
 echo "======================== SL: BinaryMNIST + LeNet ========================="
 for dssize in 10000 1000
 do
-    basedir="zoo/abl-alpha100-uniform-lenet/BinaryMNISTC-${dssize}-53-identity/LeNet/"
+    basedir="zoo/abl-alpha100-uniform-lenet/BinaryMNISTC-${dssize}-53-${CORRUPTION}/LeNet/"
     for lam in 0.000001 0.00001 0.0001 0.001 0.01 0.1 1.0
     do
         lam_part=`printf '%1.0e' $lam`
@@ -66,22 +55,10 @@ done
 echo "=========================================================================="
 
 
-echo "======================== MFVI: BinaryMNIST + ConvNet ====================="
-for dssize in 10000 1000
-do
-    basedir="zoo/bmnist53-mfvi/BinaryMNISTC-${dssize}-53-identity/ConvNet/"
-    echo ">>>>>>>>>> CORRUPTION: ${CORRUPTION}    SZ = ${dssize}"
-    python eval_calib.py \
-        --models  ${basedir}/mfvi-sz$dssize-*\
-        --corruption $CORRUPTION
-    echo "-----------------------------------------------------------------"
-done
-echo "=========================================================================="
-
 echo "====================== SL: BinaryMNIST + ConvNet ========================="
 for dssize in 10000 1000
 do
-    basedir="zoo/abl-alpha100-uniform-convnet/BinaryMNISTC-${dssize}-53-identity/ConvNet/"
+    basedir="zoo/abl-alpha100-uniform-convnet/BinaryMNISTC-${dssize}-53-${CORRUPTION}/ConvNet/"
     for lam in 0.000001 0.00001 0.0001 0.001 0.01 0.1 1.0
     do
         lam_part=`printf '%1.0e' $lam`
