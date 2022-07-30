@@ -35,6 +35,17 @@ case $SLURM_ARRAY_TASK_ID in
 esac
 
 
+echo "======================== MFVI: BinaryMNIST + LeNet ========================="
+for dssize in 10000 1000
+do
+    basedir="zoo/bmnist53-mfvi/BinaryMNISTC-${dssize}-53-${CORRUPTION}/LeNet/"
+    echo ">>>>>>>>>> CORRUPTION: ${CORRUPTION}    SZ = ${dssize}"
+    python eval_calib.py \
+        --models  ${basedir}/mfvi-sz$dssize-*\
+        --corruption $CORRUPTION
+    echo "-----------------------------------------------------------------"
+done
+echo "=========================================================================="
 
 echo "======================== SL: BinaryMNIST + LeNet ========================="
 for dssize in 10000 1000
@@ -54,6 +65,18 @@ do
 done
 echo "=========================================================================="
 
+
+echo "======================== MFVI: BinaryMNIST + ConvNet ========================="
+for dssize in 10000 1000
+do
+    basedir="zoo/bmnist53-mfvi/BinaryMNISTC-${dssize}-53-${CORRUPTION}/ConvNet/"
+    echo ">>>>>>>>>> CORRUPTION: ${CORRUPTION}    SZ = ${dssize}"
+    python eval_calib.py \
+        --models  ${basedir}/mfvi-sz$dssize-*\
+        --corruption $CORRUPTION
+    echo "-----------------------------------------------------------------"
+done
+echo "=========================================================================="
 
 echo "====================== SL: BinaryMNIST + ConvNet ========================="
 for dssize in 10000 1000
