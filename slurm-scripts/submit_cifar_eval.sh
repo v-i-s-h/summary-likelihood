@@ -18,6 +18,12 @@ export DISABLE_PBAR=1
 #     --models  ${basedir}/mfvi-*
 # echo "=========================================================================="
 
+echo "======================== LS: CIFAR10 + VGG11 ========================="
+basedir="zoo/abl-alpha100-cifar10-ls/CIFAR10/VGG11/"
+python eval_calib.py \
+    --models  ${basedir}/ls-*
+echo "=========================================================================="
+
 # echo "======================== SL: CIFAR10 + VGG11 ========================="
 # basedir="zoo/abl-alpha100-unibin/CIFAR10/VGG11/"
 # for lam in 0.000001 0.00001 0.0001 0.001 0.01 0.1 1.0
@@ -29,14 +35,14 @@ export DISABLE_PBAR=1
 # done
 # echo "=========================================================================="
 
-echo "======================== SLIM: CIFAR10 + VGG11 ========================="
-basedir="zoo/abl-alpha100-slim-CIFAR10/CIFAR10/VGG11/"
-# for lam in 0.000001 0.00001 0.0001 0.001 0.01 0.1 1.0
-for lam in 1.0
-do
-    lam_part=`printf '%1.0e' $lam`
-    python eval_calib.py \
-        --models  ${basedir}/slim-lam$lam_part-*
-    echo "-----------------------------------------------------------------"
-done
-echo "=========================================================================="
+# echo "======================== SLIM: CIFAR10 + VGG11 ========================="
+# basedir="zoo/abl-alpha100-slim-CIFAR10/CIFAR10/VGG11/"
+# # for lam in 0.000001 0.00001 0.0001 0.001 0.01 0.1 1.0
+# for lam in 1.0
+# do
+#     lam_part=`printf '%1.0e' $lam`
+#     python eval_calib.py \
+#         --models  ${basedir}/slim-lam$lam_part-*
+#     echo "-----------------------------------------------------------------"
+# done
+# echo "=========================================================================="

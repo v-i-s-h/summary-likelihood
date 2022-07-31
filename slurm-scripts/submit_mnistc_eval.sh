@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=4:00:00
+#SBATCH --time=0:30:00
 #SBATCH --mem-per-cpu=4G
 #SBATCH --gres=gpu:1
 #SBATCH --exclude=dgx[1-7]
@@ -35,63 +35,87 @@ case $SLURM_ARRAY_TASK_ID in
 esac
 
 
-echo "======================== MFVI: BinaryMNIST + LeNet ========================="
+# echo "======================== MFVI: BinaryMNIST + LeNet ========================="
+# for dssize in 10000 1000
+# do
+#     basedir="zoo/bmnist53-mfvi/BinaryMNISTC-${dssize}-53-${CORRUPTION}/LeNet/"
+#     echo ">>>>>>>>>> CORRUPTION: ${CORRUPTION}    SZ = ${dssize}"
+#     python eval_calib.py \
+#         --models  ${basedir}/mfvi-sz$dssize-*\
+#         --corruption $CORRUPTION
+#     echo "-----------------------------------------------------------------"
+# done
+# echo "=========================================================================="
+
+echo "======================== LS: BinaryMNIST + LeNet ========================="
 for dssize in 10000 1000
 do
-    basedir="zoo/bmnist53-mfvi/BinaryMNISTC-${dssize}-53-${CORRUPTION}/LeNet/"
+    basedir="zoo/bmnist53-ls/BinaryMNISTC-${dssize}-53-${CORRUPTION}/LeNet/"
     echo ">>>>>>>>>> CORRUPTION: ${CORRUPTION}    SZ = ${dssize}"
     python eval_calib.py \
-        --models  ${basedir}/mfvi-sz$dssize-*\
+        --models  ${basedir}/ls-sz$dssize-*\
         --corruption $CORRUPTION
     echo "-----------------------------------------------------------------"
 done
 echo "=========================================================================="
 
-echo "======================== SL: BinaryMNIST + LeNet ========================="
-for dssize in 10000 1000
-do
-    basedir="zoo/abl-alpha100-uniform-lenet/BinaryMNISTC-${dssize}-53-${CORRUPTION}/LeNet/"
-    for lam in 0.000001 0.00001 0.0001 0.001 0.01 0.1 1.0
-    do
-        lam_part=`printf '%1.0e' $lam`
-        # model_dirs=$(ls ${basedir}/sl-lam$lam_part-sz$dssize-*)
-        # echo $model_dirs
-        echo ">>>>>>>>>> CORRUPTION: ${CORRUPTION}    SZ = ${dssize}    LAM_SL = ${lam_part}"
-        python eval_calib.py \
-            --models  ${basedir}/sl-lam$lam_part-sz$dssize-*\
-            --corruption $CORRUPTION
-        echo "-----------------------------------------------------------------"
-    done
-done
-echo "=========================================================================="
+# echo "======================== SL: BinaryMNIST + LeNet ========================="
+# for dssize in 10000 1000
+# do
+#     basedir="zoo/abl-alpha100-uniform-lenet/BinaryMNISTC-${dssize}-53-${CORRUPTION}/LeNet/"
+#     for lam in 0.000001 0.00001 0.0001 0.001 0.01 0.1 1.0
+#     do
+#         lam_part=`printf '%1.0e' $lam`
+#         # model_dirs=$(ls ${basedir}/sl-lam$lam_part-sz$dssize-*)
+#         # echo $model_dirs
+#         echo ">>>>>>>>>> CORRUPTION: ${CORRUPTION}    SZ = ${dssize}    LAM_SL = ${lam_part}"
+#         python eval_calib.py \
+#             --models  ${basedir}/sl-lam$lam_part-sz$dssize-*\
+#             --corruption $CORRUPTION
+#         echo "-----------------------------------------------------------------"
+#     done
+# done
+# echo "=========================================================================="
 
 
-echo "======================== MFVI: BinaryMNIST + ConvNet ========================="
+# echo "======================== MFVI: BinaryMNIST + ConvNet ========================="
+# for dssize in 10000 1000
+# do
+#     basedir="zoo/bmnist53-mfvi/BinaryMNISTC-${dssize}-53-${CORRUPTION}/ConvNet/"
+#     echo ">>>>>>>>>> CORRUPTION: ${CORRUPTION}    SZ = ${dssize}"
+#     python eval_calib.py \
+#         --models  ${basedir}/mfvi-sz$dssize-*\
+#         --corruption $CORRUPTION
+#     echo "-----------------------------------------------------------------"
+# done
+# echo "=========================================================================="
+
+echo "======================== LS: BinaryMNIST + ConvNet ========================="
 for dssize in 10000 1000
 do
-    basedir="zoo/bmnist53-mfvi/BinaryMNISTC-${dssize}-53-${CORRUPTION}/ConvNet/"
+    basedir="zoo/bmnist53-ls/BinaryMNISTC-${dssize}-53-${CORRUPTION}/ConvNet/"
     echo ">>>>>>>>>> CORRUPTION: ${CORRUPTION}    SZ = ${dssize}"
     python eval_calib.py \
-        --models  ${basedir}/mfvi-sz$dssize-*\
+        --models  ${basedir}/ls-sz$dssize-*\
         --corruption $CORRUPTION
     echo "-----------------------------------------------------------------"
 done
 echo "=========================================================================="
 
-echo "====================== SL: BinaryMNIST + ConvNet ========================="
-for dssize in 10000 1000
-do
-    basedir="zoo/abl-alpha100-uniform-convnet/BinaryMNISTC-${dssize}-53-${CORRUPTION}/ConvNet/"
-    for lam in 0.000001 0.00001 0.0001 0.001 0.01 0.1 1.0
-    do
-        lam_part=`printf '%1.0e' $lam`
-        # model_dirs=$(ls )
-        echo $model_dirs
-        echo ">>>>>>>>>> CORRUPTION: ${CORRUPTION}    SZ = ${dssize}    LAM_SL = ${lam_part}"
-        python eval_calib.py \
-            --models  ${basedir}/sl-lam$lam_part-sz$dssize-*\
-            --corruption $CORRUPTION
-        echo "-----------------------------------------------------------------"
-    done
-done
-echo "=========================================================================="
+# echo "====================== SL: BinaryMNIST + ConvNet ========================="
+# for dssize in 10000 1000
+# do
+#     basedir="zoo/abl-alpha100-uniform-convnet/BinaryMNISTC-${dssize}-53-${CORRUPTION}/ConvNet/"
+#     for lam in 0.000001 0.00001 0.0001 0.001 0.01 0.1 1.0
+#     do
+#         lam_part=`printf '%1.0e' $lam`
+#         # model_dirs=$(ls )
+#         echo $model_dirs
+#         echo ">>>>>>>>>> CORRUPTION: ${CORRUPTION}    SZ = ${dssize}    LAM_SL = ${lam_part}"
+#         python eval_calib.py \
+#             --models  ${basedir}/sl-lam$lam_part-sz$dssize-*\
+#             --corruption $CORRUPTION
+#         echo "-----------------------------------------------------------------"
+#     done
+# done
+# echo "=========================================================================="
