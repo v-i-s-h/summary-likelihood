@@ -107,7 +107,10 @@ def run_experiment(
 
     # Get default params
     method_params = MethodClass.populate_missing_params(method_params, trainset)
-    pl_model = MethodClass(model, **method_params, class_weight=w, mc_samples=mc_samples)
+    if isinstance(MethodClass, methods.BaseModel):
+        pl_model = MethodClass(model, **method_params, class_weight=w, mc_samples=mc_samples)
+    else:
+        pl_model = MethodClass(model, **method_params, class_weight=w)
 
     tb_logger = pl_loggers.TensorBoardLogger(outdir, name="", version="tblog")
     tb_logger.log_hyperparams(pl_model.hparams)
