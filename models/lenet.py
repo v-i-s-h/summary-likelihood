@@ -111,3 +111,72 @@ class LeNetLogits(LeNet):
     def forward(self, x):
         logits, kl_sum = self.get_logits(x)
         return logits, kl_sum
+
+
+class LeNetEDL(nn.Module):
+    """
+        Deterministic LeNet for EDL
+        Outputs are ReLU-ed
+    """
+    def __init__(self, K=10):
+        super().__init__()
+        
+        # 1 input image channel, 6 output channels, 5x5 square convolution
+        # kernel
+        self.conv1 = Conv2dReparameterization(
+            in_channels=1,
+            out_channels=6,
+            kernel_size=5,
+            stride=1
+        )
+
+        self.conv2 = Conv2dReparameterization(
+            in_channels=6,
+            out_channels=16,
+            kernel_size=5,
+            stride=1
+        )
+        
+        self.fc1 = LinearReparameterization(
+            in_features=16 * 4 * 4,
+            out_features=120
+        )
+
+        self.fc2 = LinearReparameterization(
+            in_features=120,
+            out_features=84
+        )
+
+        self.fc3 = LinearReparameterization(
+            in_features=84,
+            out_features=K
+        )
+
+        self.num_classes = K
+
+    def forward(self, x):
+        logits = self.get_logits(x)
+        output = F.relu(logits)
+        
+        return output
+    
+    def get_logits(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x, 2)
+
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x, 2)
+        
+        x = torch.flatten(x, 1) # flatten all dimensions except the batch dimension
+        
+        x = self.fc1(x)
+        x = F.relu(x)
+
+        x = self.fc2(x)
+        x = F.relu(x)
+        
+        logits = self.fc3(x)
+        
+        return logits
