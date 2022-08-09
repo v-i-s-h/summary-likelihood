@@ -123,31 +123,31 @@ class LeNetEDL(nn.Module):
         
         # 1 input image channel, 6 output channels, 5x5 square convolution
         # kernel
-        self.conv1 = Conv2dReparameterization(
+        self.conv1 = nn.Conv2d(
             in_channels=1,
             out_channels=6,
             kernel_size=5,
             stride=1
         )
 
-        self.conv2 = Conv2dReparameterization(
+        self.conv2 = nn.Conv2d(
             in_channels=6,
             out_channels=16,
             kernel_size=5,
             stride=1
         )
         
-        self.fc1 = LinearReparameterization(
+        self.fc1 = nn.Linear(
             in_features=16 * 4 * 4,
             out_features=120
         )
 
-        self.fc2 = LinearReparameterization(
+        self.fc2 = nn.Linear(
             in_features=120,
             out_features=84
         )
 
-        self.fc3 = LinearReparameterization(
+        self.fc3 = nn.Linear(
             in_features=84,
             out_features=K
         )
