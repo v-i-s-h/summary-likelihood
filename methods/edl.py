@@ -8,8 +8,15 @@ import torch.nn.functional as F
 from pytorch_lightning import LightningModule
 import torchmetrics
 
+
+def onehotencoding(labels, num_classes):
+    y = torch.eye(num_classes)
+    y = y.type_as(labels)
+    return y[labels]
+
+
 class EvidentialDeepLearning(LightningModule):
-    def __init__(self, model, class_weight=None) -> None:
+    def __init__(self, model, class_weight=None, annealing_step=10) -> None:
         """
 
         """
@@ -19,6 +26,8 @@ class EvidentialDeepLearning(LightningModule):
             self.register_buffer(name='class_weight', tensor=torch.tensor(class_weight))
         else:
             self.class_weight = None
+        self.register_buffer(name='annealing_step', 
+                                    tensor=torch.tensor(annealing_step))
         
         # Metrics
         self.train_accuracy = torchmetrics.Accuracy()
@@ -37,6 +46,9 @@ class EvidentialDeepLearning(LightningModule):
         self.val_ece = torchmetrics.CalibrationError(n_bins=10, norm='l1')
         self.test_ece = torchmetrics.CalibrationError(n_bins=10, norm='l1')
 
+        # Set loss function
+        self.loss_function = self.edl_mse_loss
+
     def forward(self, x):
         return self.model(x)
 
@@ -46,7 +58,7 @@ class EvidentialDeepLearning(LightningModule):
         ypred = self(x)
 
         # Compute loss
-        loss = F.mse_loss(ypred, y)
+        loss = self.loss_function(ypred, y)
 
         preds = torch.argmax(ypred, dim=1)
 
@@ -69,7 +81,7 @@ class EvidentialDeepLearning(LightningModule):
         
         ypred = self(x)
         
-        val_loss = F.mse_loss(ypred, y)
+        val_loss = self.loss_function(ypred, y)
 
         preds = torch.argmax(ypred, dim=1)
         pred_prob = torch.exp(ypred) # TODO: Update for ReLU outputs
@@ -114,7 +126,7 @@ class EvidentialDeepLearning(LightningModule):
         
         ypred = self(x)
         
-        test_loss = F.mse_loss(ypred, y)
+        test_loss = self.loss_function(ypred, y)
         preds = torch.argmax(ypred, dim=1)
         pred_prob = torch.exp(ypred) # TODO: Update for ReLU output
         
@@ -161,6 +173,58 @@ class EvidentialDeepLearning(LightningModule):
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=0.001)
 
+    def _loglikelihood_loss(self, target, alpha):
+        S = torch.sum(alpha, dim=1, keepdim=True)
+
+        ll_err = torch.sum((target - (alpha / S))**2, dim=1, keepdim=True)
+        ll_var = torch.sum(alpha * (S - alpha) / (S * S * (S + 1)), dim=1, keepdim=True)
+
+        ll = ll_err + ll_var
+
+        return ll
+
+    def _kl_divergence(self, alpha):
+        ones = torch.ones([1, self.model.num_classes], dtype=torch.float32)
+        ones = ones.type_as(alpha)
+        sum_alpha = torch.sum(alpha, dim=1, keepdim=True)
+
+        first_term = torch.lgamma(sum_alpha) \
+                        - torch.lgamma(alpha).sum(dim=1, keepdim=True) \
+                        + torch.lgamma(ones).sum(dim=1, keepdim=True) \
+                        - torch.lgamma(ones.sum(dim=1, keepdim=True))
+
+        second_term = (alpha - ones).mul(
+                            torch.digamma(alpha) - torch.digamma(sum_alpha)
+                        ).sum(dim=1, keepdim=True)
+
+        kl = first_term + second_term
+
+        return kl
+
+    def _mse_loss(self, target, alpha):
+        ll = self._loglikelihood_loss(target, alpha)
+
+        annealing_coeff = torch.min(
+            torch.tensor(1.0, dtype=torch.float32),
+            torch.tensor(self.current_epoch / self.annealing_step, dtype=torch.float32)
+        )
+
+        kl_alpha = (alpha - 1) * (1 - target) + 1
+        kl_div = annealing_coeff * self._kl_divergence(kl_alpha)
+
+        return ll + kl_div
+
+    def edl_mse_loss(self, evidence, target):
+        """
+            Compute MSE loss for EDL
+        """
+        alpha = evidence + 1
+        target = onehotencoding(target, self.model.num_classes)
+        loss = torch.mean(self._mse_loss(target, alpha))
+
+        return loss
+
+
     @staticmethod
     def populate_missing_params(params, dataset):
         """
@@ -170,7 +234,5 @@ class EvidentialDeepLearning(LightningModule):
 
         all_params = {}
         all_params.update(params)
-
-        print("==>", all_params)
 
         return all_params
