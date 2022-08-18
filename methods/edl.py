@@ -16,6 +16,13 @@ def onehotencoding(labels, num_classes):
     return y[labels]
 
 
+def compute_prob_from_evidence(evidence):
+    alpha = 1 + evidence # ypred is evidence
+    prob = alpha / alpha.sum(dim=1).unsqueeze(-1)
+
+    return prob
+
+
 class EvidentialDeepLearning(LightningModule):
     def __init__(self, model, class_weight=None, annealing_step=10) -> None:
         """
@@ -87,8 +94,7 @@ class EvidentialDeepLearning(LightningModule):
         preds = torch.argmax(ypred, dim=1)
 
         # Compute prediction probabilities from evidence ypred
-        alpha = 1 + ypred # ypred is evidence
-        pred_prob = alpha / alpha.sum(dim=1).unsqueeze(-1)
+        pred_prob = compute_prob_from_evidence(ypred)
         
         self.log('val_loss', val_loss.detach())
 
@@ -107,21 +113,22 @@ class EvidentialDeepLearning(LightningModule):
         self.log('val_f1', self.val_f1score, prog_bar=True)
         self.log('val_ece', self.val_ece, prog_bar=True)
 
-        # # Log histogram of predictions
-        # ypred = torch.cat([o['ypred'] for o in outputs], dim=0)
-        # if self.model.num_classes == 2:
-        #     # For binary classification, only log score for class 1
-        #     self.logger.experiment.add_histogram(
-        #         'y_pred', torch.exp(ypred[:, 1]), # only for label 1
-        #         global_step=self.current_epoch,
-        #         bins=10)
-        # else:
-        #     for i in range(self.model.num_classes):
-        #         self.logger.experiment.add_histogram(
-        #             'y_pred_{:02d}'.format(i), 
-        #             torch.exp(ypred[:, i]), # for label `i`
-        #             global_step=self.current_epoch,
-        #             bins=10)
+        # Log histogram of predictions
+        ypred = torch.cat([o['ypred'] for o in outputs], dim=0)
+        prob = compute_prob_from_evidence(ypred)
+        if self.model.num_classes == 2:
+            # For binary classification, only log score for class 1
+            self.logger.experiment.add_histogram(
+                'y_pred', prob[:, 1], # only for label 1
+                global_step=self.current_epoch,
+                bins=10)
+        else:
+            for i in range(self.model.num_classes):
+                self.logger.experiment.add_histogram(
+                    'y_pred_{:02d}'.format(i), 
+                    prob[:, i], # for label `i`
+                    global_step=self.current_epoch,
+                    bins=10)
 
         return None
 
@@ -134,8 +141,7 @@ class EvidentialDeepLearning(LightningModule):
         preds = torch.argmax(ypred, dim=1)
         
         # Compute prediction probabilities from evidence ypred
-        alpha = 1 + ypred # ypred is evidence
-        pred_prob = alpha / alpha.sum(dim=1).unsqueeze(-1)
+        pred_prob = compute_prob_from_evidence(ypred)
         
         self.log('test_loss', test_loss.detach())
 
@@ -161,17 +167,18 @@ class EvidentialDeepLearning(LightningModule):
 
         # Log histogram of predictions
         ypred = torch.cat([o['ypred'] for o in outputs], dim=0)
+        prob = compute_prob_from_evidence(ypred)
         if self.model.num_classes == 2:
             # For binary classification, only log score for class 1
             self.logger.experiment.add_histogram(
-                'y_pred_test', torch.exp(ypred[:, 1]), # only for label 1
+                'y_pred_test', prob[:, 1], # only for label 1
                 global_step=self.current_epoch,
                 bins=10)
         else:
             for i in range(self.model.num_classes):
                 self.logger.experiment.add_histogram(
                     'y_pred_test_{:02d}'.format(i), 
-                    torch.exp(ypred[:, i]), # for label `i`
+                    prob[:, i], # for label `i`
                     global_step=self.current_epoch,
                     bins=10)
 
