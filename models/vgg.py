@@ -159,6 +159,19 @@ class VGG11Logits(VGG11):
         return out
 
 
+class VGG11EDL(VGG11):
+    def __init__(self, K=10):
+        super().__init__()
+        self.model = VGGBase(make_layers(cfgs['vgg11']), K=K) # build deterministic model
+        self.num_classes = K
+
+    def forward(self, x, return_kl=True):
+        x = self.model.get_logits(x)
+        out = F.relu(x) # ReLU'd outputs for EDL evidence
+
+        return out
+
+
 class VGG13(nn.Module):
     def __init__(self, K=10,
             prior_mu=0.0, prior_sigma=1.0,
