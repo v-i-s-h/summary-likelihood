@@ -169,6 +169,112 @@ class ConvNetLogits(ConvNet):
         return logits, kl_sum
 
 
+class ConvNetEDL(nn.Module):
+    """
+        
+    """
+
+    def __init__(self, K=10):
+        super().__init__()
+
+        self.conv1 = nn.Conv2d(
+            in_channels=1,
+            out_channels=16,
+            kernel_size=3
+        )
+        self.bn1 = nn.BatchNorm2d(num_features=16)
+
+        self.conv2 = nn.Conv2d(
+            in_channels=16,
+            out_channels=16,
+            kernel_size=3
+        )
+        self.bn2 = nn.BatchNorm2d(num_features=16)
+
+        self.conv3 = nn.Conv2d(
+            in_channels=16,
+            out_channels=64,
+            kernel_size=3,
+            stride=1
+        )
+        self.bn3 = nn.BatchNorm2d(num_features=64)
+
+        self.conv4 = nn.Conv2d(
+            in_channels=64,
+            out_channels=64,
+            kernel_size=3,
+            stride=1
+        )
+        self.bn4 = nn.BatchNorm2d(num_features=64)
+
+        self.conv5 = nn.Conv2d(
+            in_channels=64,
+            out_channels=64,
+            kernel_size=3,
+            stride=1,
+            padding=1
+        )
+        self.bn5 = nn.BatchNorm2d(num_features=64)
+
+        self.fc1 = nn.Linear(
+            in_features=64 * 4 * 4,
+            out_features=128
+        )
+
+        self.fc2 = nn.Linear(
+            in_features=128,
+            out_features=128
+        )
+
+        self.fc3 = nn.Linear(
+            in_features=128,
+            out_features=K
+        )
+
+        self.num_classes = K
+
+    def forward(self, x):
+        logits = self.get_logits(x)
+        output = F.relu(logits)
+
+        return output
+
+    def get_logits(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = F.relu(x)
+
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x, 2)
+
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = F.relu(x)
+
+        x = self.conv4(x)
+        x = self.bn4(x)
+        x = F.relu(x)
+
+        x = self.conv5(x)
+        x = self.bn5(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x, 2)
+
+        x = torch.flatten(x, 1) # flatten all dimensions except the batch dimension
+
+        x = self.fc1(x)
+        x = F.relu(x)
+
+        x = self.fc2(x)
+        x = F.relu(x)
+
+        x = self.fc3(x)
+        
+        return x
+    
+
 if __name__ == "__main__":
     x = torch.rand(1, 1, 28, 28)
 
