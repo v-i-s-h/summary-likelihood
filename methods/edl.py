@@ -12,6 +12,7 @@ import torchmetrics
 def onehotencoding(labels, num_classes):
     y = torch.eye(num_classes)
     y = y.type_as(labels)
+
     return y[labels]
 
 
@@ -84,7 +85,10 @@ class EvidentialDeepLearning(LightningModule):
         val_loss = self.loss_function(ypred, y)
 
         preds = torch.argmax(ypred, dim=1)
-        pred_prob = torch.exp(ypred) # TODO: Update for ReLU outputs
+
+        # Compute prediction probabilities from evidence ypred
+        alpha = 1 + ypred # ypred is evidence
+        pred_prob = alpha / alpha.sum(dim=1).unsqueeze(-1)
         
         self.log('val_loss', val_loss.detach())
 
@@ -103,21 +107,21 @@ class EvidentialDeepLearning(LightningModule):
         self.log('val_f1', self.val_f1score, prog_bar=True)
         self.log('val_ece', self.val_ece, prog_bar=True)
 
-        # Log histogram of predictions
-        ypred = torch.cat([o['ypred'] for o in outputs], dim=0)
-        if self.model.num_classes == 2:
-            # For binary classification, only log score for class 1
-            self.logger.experiment.add_histogram(
-                'y_pred', torch.exp(ypred[:, 1]), # only for label 1
-                global_step=self.current_epoch,
-                bins=10)
-        else:
-            for i in range(self.model.num_classes):
-                self.logger.experiment.add_histogram(
-                    'y_pred_{:02d}'.format(i), 
-                    torch.exp(ypred[:, i]), # for label `i`
-                    global_step=self.current_epoch,
-                    bins=10)
+        # # Log histogram of predictions
+        # ypred = torch.cat([o['ypred'] for o in outputs], dim=0)
+        # if self.model.num_classes == 2:
+        #     # For binary classification, only log score for class 1
+        #     self.logger.experiment.add_histogram(
+        #         'y_pred', torch.exp(ypred[:, 1]), # only for label 1
+        #         global_step=self.current_epoch,
+        #         bins=10)
+        # else:
+        #     for i in range(self.model.num_classes):
+        #         self.logger.experiment.add_histogram(
+        #             'y_pred_{:02d}'.format(i), 
+        #             torch.exp(ypred[:, i]), # for label `i`
+        #             global_step=self.current_epoch,
+        #             bins=10)
 
         return None
 
@@ -128,7 +132,10 @@ class EvidentialDeepLearning(LightningModule):
         
         test_loss = self.loss_function(ypred, y)
         preds = torch.argmax(ypred, dim=1)
-        pred_prob = torch.exp(ypred) # TODO: Update for ReLU output
+        
+        # Compute prediction probabilities from evidence ypred
+        alpha = 1 + ypred # ypred is evidence
+        pred_prob = alpha / alpha.sum(dim=1).unsqueeze(-1)
         
         self.log('test_loss', test_loss.detach())
 
@@ -223,7 +230,6 @@ class EvidentialDeepLearning(LightningModule):
         loss = torch.mean(self._mse_loss(target, alpha))
 
         return loss
-
 
     @staticmethod
     def populate_missing_params(params, dataset):
