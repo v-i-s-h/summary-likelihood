@@ -171,11 +171,16 @@ class VGG11EDL(VGG11):
         self.model = VGGBase(make_layers(cfgs['vgg11']), K=K) # build deterministic model
         self.num_classes = K
 
-    def forward(self, x, return_kl=True):
-        x = self.model.get_logits(x)
-        out = F.relu(x) # ReLU'd outputs for EDL evidence
+    def forward(self, x):
+        out = self.get_evidence(x)
 
         return out
+
+    def get_evidence(self, x):
+        x = self.model.get_logits(x) # not really logits
+        evidence = F.relu(x)
+
+        return evidence
 
     def get_softmax(self, x):
         logits, _ = self.get_logits(x)
