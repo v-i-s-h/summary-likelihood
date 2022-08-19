@@ -44,6 +44,12 @@ class VGGBase(nn.Module):
 
         return logits
 
+    def get_softmax(self, x):
+        logits = self.get_logits(x)
+        scores = F.softmax(logits, dim=1)
+
+        return scores
+
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -170,6 +176,12 @@ class VGG11EDL(VGG11):
         out = F.relu(x) # ReLU'd outputs for EDL evidence
 
         return out
+
+    def get_softmax(self, x):
+        logits, _ = self.get_logits(x)
+        scores = F.softmax(logits, dim=1)
+
+        return scores
 
 
 class VGG13(nn.Module):

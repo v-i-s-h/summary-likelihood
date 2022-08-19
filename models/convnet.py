@@ -7,6 +7,8 @@ import numpy as np
 from bayesian_torch.layers import Conv2dReparameterization
 from bayesian_torch.layers import LinearReparameterization
 
+from methods.edl import compute_prob_from_evidence
+
 
 class ConvNet(nn.Module):
     """
@@ -159,6 +161,12 @@ class ConvNet(nn.Module):
 
         return x, kl_sum
 
+    def get_softmax(self, x):
+        logits, _ = self.get_logits(x)
+        scores = F.softmax(logits, dim=1)
+
+        return scores
+
 
 class ConvNetLogits(ConvNet):
     def __init__(self, K=10, prior_mu=0, prior_sigma=np.exp(-1), posterior_mu_init=0, posterior_rho_init=-3):
@@ -234,12 +242,11 @@ class ConvNetEDL(nn.Module):
         self.num_classes = K
 
     def forward(self, x):
-        logits = self.get_logits(x)
-        output = F.relu(logits)
+        evidence = self.get_evidence(x)
 
-        return output
+        return evidence
 
-    def get_logits(self, x):
+    def get_evidence(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = F.relu(x)
@@ -271,8 +278,17 @@ class ConvNetEDL(nn.Module):
         x = F.relu(x)
 
         x = self.fc3(x)
+
+
+        x = F.relu(x) # Evidence are ReLU'd
         
         return x
+
+    def get_softmax(self, x):
+        evidence = self.get_evidence(x)
+        scores = compute_prob_from_evidence(evidence)
+
+        return scores
     
 
 if __name__ == "__main__":

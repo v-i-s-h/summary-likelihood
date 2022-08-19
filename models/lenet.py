@@ -6,6 +6,8 @@ import torch.nn.functional as F
 from bayesian_torch.layers import Conv2dReparameterization
 from bayesian_torch.layers import LinearReparameterization
 
+from methods.edl import compute_prob_from_evidence
+
 class LeNet(nn.Module):
     def __init__(self, K=10, 
             prior_mu=0.0, prior_sigma=1.0,
@@ -100,6 +102,12 @@ class LeNet(nn.Module):
 
         return logits, kl_sum
 
+    def get_softmax(self, x):
+        logits, _ = self.get_logits(x)
+        scores = F.softmax(logits, dim=1)
+
+        return scores
+
 
 class LeNetLogits(LeNet):
     """
@@ -155,12 +163,11 @@ class LeNetEDL(nn.Module):
         self.num_classes = K
 
     def forward(self, x):
-        logits = self.get_logits(x)
-        output = F.relu(logits)
+        out = self.get_evidence(x)
         
-        return output
+        return out
     
-    def get_logits(self, x):
+    def get_evidence(self, x):
         x = self.conv1(x)
         x = F.relu(x)
         x = F.max_pool2d(x, 2)
@@ -177,6 +184,14 @@ class LeNetEDL(nn.Module):
         x = self.fc2(x)
         x = F.relu(x)
         
-        logits = self.fc3(x)
+        x = self.fc3(x)
+
+        evidence = F.relu(x)
         
-        return logits
+        return evidence
+
+    def get_softmax(self, x):
+        evidence = self.get_evidence(x)
+        scores = compute_prob_from_evidence(evidence)
+
+        return scores
