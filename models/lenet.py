@@ -1,4 +1,3 @@
-from turtle import forward
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,6 +6,7 @@ from bayesian_torch.layers import Conv2dReparameterization
 from bayesian_torch.layers import LinearReparameterization
 
 from methods.edl import compute_prob_from_evidence
+
 
 class LeNet(nn.Module):
     def __init__(self, K=10, 
@@ -107,18 +107,6 @@ class LeNet(nn.Module):
         scores = F.softmax(logits, dim=1)
 
         return scores
-
-
-class LeNetLogits(LeNet):
-    """
-        LeNet model to return logits instead of log-softmax 
-    """
-    def __init__(self, K=10, prior_mu=0, prior_sigma=1, posterior_mu_init=0, posterior_rho_init=-3):
-        super().__init__(K, prior_mu, prior_sigma, posterior_mu_init, posterior_rho_init)
-    
-    def forward(self, x):
-        logits, kl_sum = self.get_logits(x)
-        return logits, kl_sum
 
 
 class LeNetEDL(nn.Module):

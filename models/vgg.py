@@ -1,13 +1,9 @@
-import os
-from turtle import forward
-
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from bayesian_torch.layers import Conv2dReparameterization
-from bayesian_torch.layers import LinearReparameterization
 from bayesian_torch.models.dnn_to_bnn import dnn_to_bnn, get_kl_loss
+
+from methods.edl import compute_prob_from_evidence
 
 
 class VGGBase(nn.Module):
@@ -151,19 +147,6 @@ class VGG11(nn.Module):
 
         return out
 
-class VGG11Logits(VGG11):
-    def __init__(self, K=10, prior_mu=0, prior_sigma=1, posterior_mu_init=0, posterior_rho_init=-3):
-        super().__init__(K, prior_mu, prior_sigma, posterior_mu_init, posterior_rho_init)
-
-    def forward(self, x, return_kl=True):
-        out = self.model.get_logits(x)
-
-        if return_kl:
-            kl = get_kl_loss(self.model)
-            return out, kl
-
-        return out
-
 
 class VGG11EDL(VGG11):
     def __init__(self, K=10):
@@ -183,8 +166,8 @@ class VGG11EDL(VGG11):
         return evidence
 
     def get_softmax(self, x):
-        logits, _ = self.get_logits(x)
-        scores = F.softmax(logits, dim=1)
+        evidence = self.get_evidence(x)
+        scores = compute_prob_from_evidence(evidence)
 
         return scores
 
