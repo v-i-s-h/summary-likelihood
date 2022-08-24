@@ -3,6 +3,7 @@
 from multiprocessing.sharedctypes import Value
 import os
 import numpy as np
+from sklearn.model_selection import train_test_split
 from .dataset import DatasetBase
 
 
@@ -65,17 +66,23 @@ class BinaryMNISTC(DatasetBase):
         if self.split == 'train':
             images_file = os.path.join(self.root, 'mnist_c', self.corruption, 'train_images.npy')
             labels_file = os.path.join(self.root, 'mnist_c', self.corruption, 'train_labels.npy')
+            # Load and only use train split
+            x = np.load(images_file)
+            y = np.load(labels_file)
+            x, _, y, _ = train_test_split(x, y, train_size=0.80, random_state=42)
         elif self.split == 'val':
             images_file = os.path.join(self.root, 'mnist_c', self.corruption, 'train_images.npy')
             labels_file = os.path.join(self.root, 'mnist_c', self.corruption, 'train_labels.npy')
+            x = np.load(images_file)
+            y = np.load(labels_file)
+            _, x, _, y = train_test_split(x, y, train_size=0.80, random_state=42)
         elif self.split == 'test':
             images_file = os.path.join(self.root, 'mnist_c', self.corruption, 'test_images.npy')
             labels_file = os.path.join(self.root, 'mnist_c', self.corruption, 'test_labels.npy')
+            x = np.load(images_file)
+            y = np.load(labels_file)
         else:
             raise ValueError
-        
-        x = np.load(images_file)
-        y = np.load(labels_file)
 
         # Filter unnecessary classes out
         idx0 = np.where(y == self.labels[0])[0]
@@ -121,9 +128,21 @@ class BinaryMNISTC(DatasetBase):
         self.n_classes = [self.n0, self.n1]
 
     def __repr__(self):
-        return "BInaryMNIST-{} :: {}{}".format(self.corruption, *self.labels) + \
+        return "BinaryMNIST-{} :: {}{}".format(self.corruption, *self.labels) + \
                 "\n    Split                 : {}".format(self.split) + \
                 "\n    X shape               : {}".format(self.x.shape) + \
                 "\n    Y shape               : {}".format(self.y.shape) + \
                 "\n    No.of positive classes: {} ({:.2f}%)".format(
                     self.n1, 100 * self.n1 / self.n_samples)
+
+
+if __name__ == "__main__":
+    
+    ds_train = BinaryMNISTC(53, 'identity', 'train')
+    print(ds_train)
+
+    ds_val = BinaryMNISTC(53, 'identity', 'val')
+    print(ds_val)
+
+    ds_test = BinaryMNISTC(53, 'identity', 'test')
+    print(ds_test)
