@@ -77,6 +77,7 @@ def run_experiment(
     # Load dataset
     DatasetClass = getattr(datasets, dataset)
     trainset = DatasetClass(**ds_params, split='train', transform=x_transform)
+    valset = DatasetClass(**ds_params, split='val', transform=x_transform)
     # Ignore size constraint for test set
     _ds_params = copy.deepcopy(ds_params)
     if 'size' in _ds_params:
@@ -84,7 +85,7 @@ def run_experiment(
     testset = DatasetClass(**_ds_params, split='test', transform=x_transform)
 
     tr_loader = DataLoader(dataset=trainset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(dataset=testset, batch_size=8*batch_size, shuffle=False)
+    val_loader = DataLoader(dataset=valset, batch_size=8*batch_size, shuffle=False)
     test_loader = DataLoader(dataset=testset,  batch_size=8*batch_size, shuffle=False)
 
     N = len(trainset)
