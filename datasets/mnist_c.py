@@ -97,7 +97,7 @@ class BinaryMNISTC(DatasetBase):
                 print("WARNING: Not enough samples to get target imbalance.")
 
         idx = np.hstack((idx0, idx1))
-        if size is not None:
+        if size is not None and split == 'train':
             if idx.shape[0] > size:
                 idx = np.random.choice(idx, size=size, replace=False)
             else:
