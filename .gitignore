@@ -141,3 +141,6 @@ figs/
 
 # Pretrained
 pretrained/
+
+# VSCode
+.vscode/
