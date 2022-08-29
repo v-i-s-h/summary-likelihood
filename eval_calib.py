@@ -36,50 +36,43 @@ def get_predictions(model, dataloader, msg="Getting predictions"):
 
     y_true = None
     scores = None
-    logits = None
-
+    
     model.eval()
     with torch.no_grad():
         for x, y in tqdm(dataloader, **tqdm_params):
             x = x.to(device)
             y = y.to(device)
 
-            logits_ = []
+            ypred = []
             for mc_run in range(128): # TODO: Adjustable MC sampling
-                mc_logits, _ = model(x)
-                logits_.append(mc_logits)
+                _ypred = model.get_softmax(x)
+                ypred.append(_ypred)
 
-            _logits = torch.mean(torch.stack(logits_), dim=0)
-            # score = torch.sigmoid(_logits)
-            score = F.softmax(_logits, dim=1)
-
+            score = torch.mean(torch.stack(ypred), dim=0)
+            
             if y_true is None:
                 y_true = y.detach()
             else:
                 y_true = torch.concat([y_true, y.detach()])
-            if logits is None:
-                logits = _logits.detach()
-            else:
-                logits = torch.concat([logits, _logits.detach()])
             if scores is None:
                 scores = score.detach()
             else:
                 scores = torch.concat([scores, score.detach()])
     model.train()
 
-    return y_true, scores, logits
+    return y_true, scores
 
 
 def get_model_predictions(model, valloader, testloader, n_bins=10):
     # Get predictions from validation set and calibrate models
-    y_true_val, scores_val, logits_val = get_predictions(model, valloader)
+    y_true_val, scores_val = get_predictions(model, valloader)
     
     ### Evaluate calibration of testloader
-    y_true_test, scores_test, logits_test = get_predictions(model, testloader)
+    y_true_test, scores_test = get_predictions(model, testloader)
 
     return {
-        'val': [ y_true_val, scores_val, logits_val],
-        'test': [ y_true_test, scores_test, logits_test]
+        'val': [ y_true_val, scores_val],
+        'test': [ y_true_test, scores_test]
     }
 
 
@@ -88,10 +81,10 @@ def evaluate_model_calibration(preds, n_bins=10):
     results = {}
     
     # Get predictions from validation set and calibrate models
-    y_true_val, scores_val, logits_val = preds['val']
+    y_true_val, scores_val = preds['val']
     
     ### Evaluate calibration of testloader
-    y_true_test, scores_test, logits_test = preds['test']
+    y_true_test, scores_test = preds['test']
     
     results['nll_uncal_val'] = F.nll_loss(torch.log(scores_val), y_true_val).detach().item()
     results['nll_uncal_test'] = F.nll_loss(torch.log(scores_test), y_true_test).detach().item()
@@ -151,7 +144,7 @@ def run_evaluation(model_str, ckpt_file, dataset, ds_params, transform, corrupti
         device = 'cuda'
     
     # Build model
-    ModelClass = getattr(models, model_str+'Logits')
+    ModelClass = getattr(models, model_str)
     model = ModelClass(testset.n_labels).to(device)
     checkpoint = torch.load(ckpt_file, map_location=torch.device(device))
     # Clean up state dict to have only model params
