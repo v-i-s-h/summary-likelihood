@@ -3,3 +3,4 @@ MNIST/*
 *.npz
 cifar-10-batches-py/*
 CIFAR-10-C/*
+FashionMNIST/*
