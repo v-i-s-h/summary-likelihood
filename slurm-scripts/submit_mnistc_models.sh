@@ -57,7 +57,8 @@ OUTDIR="zoo/sl/uniform-prior-alphavar"
 MAX_STEPS=3000
 METHOD="sl"
 
-for alpha in 0.01 0.1 1.0 10.0 100.0 0.05 0.5 5.0 25.0 50.0 75.0
+# for alpha in 0.01 0.1 1.0 10.0 100.0 0.05 0.5 5.0 25.0 50.0 75.0
+for alpha in 0.05 0.5 5.0 25.0 50.0 75.0
 do
     for dssize in 8000 1000
     do
@@ -65,7 +66,7 @@ do
 
         # LeNet
         python train.py \
-            --method $METHOD --params a=1,b=1,alpha=$alpha \
+            --method $METHOD --params beta,a=1,b=1,alpha=$alpha \
             --dataset BinaryMNISTC \
             --ds-params size=$dssize,labels=53,corruption=identity \
             --model LeNet \
@@ -77,7 +78,7 @@ do
 
         # ConvNet
         python train.py \
-            --method $METHOD --params a=1,b=1,alpha=$alpha \
+            --method $METHOD --params beta,a=1,b=1,alpha=$alpha \
             --dataset BinaryMNISTC \
             --ds-params size=$dssize,labels=53,corruption=identity \
             --model ConvNet \
@@ -95,7 +96,8 @@ OUTDIR="zoo/sl/half-prior-alphavar"
 MAX_STEPS=3000
 METHOD="sl"
 
-for alpha in 0.01 0.1 1.0 10.0 100.0 0.05 0.5 5.0 25.0 50.0 75.0
+# for alpha in 0.01 0.1 1.0 10.0 100.0 0.05 0.5 
+for alpha in 5.0 25.0 50.0 75.0
 do
     for dssize in 8000 1000
     do
@@ -103,7 +105,7 @@ do
 
         # LeNet
         python train.py \
-            --method $METHOD --params a=0.5,b=0.5,alpha=$alpha \
+            --method $METHOD --params beta,a=0.5,b=0.5,alpha=$alpha \
             --dataset BinaryMNISTC \
             --ds-params size=$dssize,labels=53,corruption=identity \
             --model LeNet \
@@ -115,7 +117,7 @@ do
 
         # ConvNet
         python train.py \
-            --method $METHOD --params a=0.5,b=0.5,alpha=$alpha \
+            --method $METHOD --params beta,a=0.5,b=0.5,alpha=$alpha \
             --dataset BinaryMNISTC \
             --ds-params size=$dssize,labels=53,corruption=identity \
             --model ConvNet \
