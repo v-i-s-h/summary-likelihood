@@ -226,7 +226,7 @@ export DISABLE_PBAR=1
 # done
 
 # --------------------------------- EDL + computed -----------------------------
-OUTDIR="zoo/edl/computer-prior"
+OUTDIR="zoo/edl/computed-prior"
 MAX_STEPS=3000
 METHOD="edl"
 for dssize in 8000 1000
@@ -234,7 +234,7 @@ do
     # LeNet
     python train.py \
         --method $METHOD \
-        --params evidence_prior=computed \ 
+        --params evidence_prior=computed \
         --dataset BinaryMNISTC \
         --ds-params size=$dssize,labels=53,corruption=identity \
         --model LeNetEDL \
@@ -258,7 +258,7 @@ do
         --prefix $METHOD-sz$dssize-$SLURM_ARRAY_TASK_ID
 done
 
-# --------------------------------- EDL + 0.1 -----------------------------
+# --------------------------------- EDL + 0.1 ----------------------------------
 OUTDIR="zoo/edl/skewed-prior"
 MAX_STEPS=3000
 METHOD="edl"
@@ -267,7 +267,7 @@ do
     # LeNet
     python train.py \
         --method $METHOD \
-        --params evidence_prior=0.1 \ 
+        --params evidence_prior=0.1 \
         --dataset BinaryMNISTC \
         --ds-params size=$dssize,labels=53,corruption=identity \
         --model LeNetEDL \
