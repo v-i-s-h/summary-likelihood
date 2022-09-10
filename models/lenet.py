@@ -150,6 +150,10 @@ class LeNetEDL(nn.Module):
 
         self.num_classes = K
 
+        # Note: evidence prior is defined here, but will be injected into
+        # the model by edl method
+        self.evidence_prior = None
+
     def forward(self, x):
         out = self.get_evidence(x)
         
@@ -180,6 +184,11 @@ class LeNetEDL(nn.Module):
 
     def get_softmax(self, x):
         evidence = self.get_evidence(x)
-        scores = compute_prob_from_evidence(evidence)
+        if self.evidence_prior is not None:
+            scores = compute_prob_from_evidence(self.evidence_prior, evidence)
+        else:
+            print('WARNING: Unknown evidence prior for EDL model. Using uniform evidence')
+            self.evidence_prior = torch.ones(self.num_classes, device=x.device)
+            scores = compute_prob_from_evidence(self.evidence_prior, evidence)
 
         return scores

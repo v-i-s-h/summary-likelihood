@@ -2,6 +2,7 @@
     Evidential Deep Learning for classfication
 """
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -15,16 +16,14 @@ def onehotencoding(labels, num_classes):
 
     return y[labels]
 
-
-def compute_prob_from_evidence(evidence):
-    alpha = 1 + evidence # ypred is evidence
+def compute_prob_from_evidence(evidence_prior, evidence):
+    alpha = evidence_prior + evidence # ypred is evidence
     prob = alpha / alpha.sum(dim=1).unsqueeze(-1)
 
     return prob
 
-
 class EvidentialDeepLearning(LightningModule):
-    def __init__(self, model, class_weight=None, annealing_step=10) -> None:
+    def __init__(self, model, evidence_prior, class_weight=None, annealing_step=10) -> None:
         """
 
         """
@@ -36,6 +35,10 @@ class EvidentialDeepLearning(LightningModule):
             self.class_weight = None
         self.register_buffer(name='annealing_step', 
                                     tensor=torch.tensor(annealing_step))
+
+        self.register_buffer(name='evidence_prior', tensor=torch.tensor(evidence_prior))
+        #Inject evidence prior to model
+        self.model.evidence_prior = self.evidence_prior
         
         # Metrics
         self.train_accuracy = torchmetrics.Accuracy()
@@ -56,6 +59,7 @@ class EvidentialDeepLearning(LightningModule):
 
         # Set loss function
         self.loss_function = self.edl_mse_loss
+
 
     def forward(self, x):
         return self.model(x)
@@ -94,7 +98,7 @@ class EvidentialDeepLearning(LightningModule):
         preds = torch.argmax(ypred, dim=1)
 
         # Compute prediction probabilities from evidence ypred
-        pred_prob = compute_prob_from_evidence(ypred)
+        pred_prob = self._compute_prob_from_evidence(ypred)
         
         self.log('val_loss', val_loss.detach())
 
@@ -115,7 +119,7 @@ class EvidentialDeepLearning(LightningModule):
 
         # Log histogram of predictions
         ypred = torch.cat([o['ypred'] for o in outputs], dim=0)
-        prob = compute_prob_from_evidence(ypred)
+        prob = self._compute_prob_from_evidence(ypred)
         if self.model.num_classes == 2:
             # For binary classification, only log score for class 1
             self.logger.experiment.add_histogram(
@@ -141,7 +145,7 @@ class EvidentialDeepLearning(LightningModule):
         preds = torch.argmax(ypred, dim=1)
         
         # Compute prediction probabilities from evidence ypred
-        pred_prob = compute_prob_from_evidence(ypred)
+        pred_prob = self._compute_prob_from_evidence(ypred)
         
         self.log('test_loss', test_loss.detach())
 
@@ -167,7 +171,7 @@ class EvidentialDeepLearning(LightningModule):
 
         # Log histogram of predictions
         ypred = torch.cat([o['ypred'] for o in outputs], dim=0)
-        prob = compute_prob_from_evidence(ypred)
+        prob = self._compute_prob_from_evidence(ypred)
         if self.model.num_classes == 2:
             # For binary classification, only log score for class 1
             self.logger.experiment.add_histogram(
@@ -186,6 +190,11 @@ class EvidentialDeepLearning(LightningModule):
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=0.001)
+
+    def _compute_prob_from_evidence(self, evidence):
+        prob = compute_prob_from_evidence(self.evidence_prior, evidence)
+
+        return prob
 
     def _loglikelihood_loss(self, target, alpha):
         S = torch.sum(alpha, dim=1, keepdim=True)
@@ -232,7 +241,7 @@ class EvidentialDeepLearning(LightningModule):
         """
             Compute MSE loss for EDL
         """
-        alpha = evidence + 1
+        alpha = evidence + self.evidence_prior
         target = onehotencoding(target, self.model.num_classes)
         loss = torch.mean(self._mse_loss(target, alpha))
 
@@ -243,9 +252,42 @@ class EvidentialDeepLearning(LightningModule):
         """
             
         """
-        N = len(dataset)
-
         all_params = {}
-        all_params.update(params)
+        computed_params = {}
+        K = dataset.n_labels
+        
 
+        eprior_arg = params.get('evidence_prior', 'uniform') # default is uniform prior
+        if eprior_arg == 'uniform':
+            computed_params['evidence_prior'] = np.ones(K) # uniform evidence prior
+        elif eprior_arg == 'computed':
+            # Compute frequency based prior - always less that 1
+            if K == 2:
+                p0 = dataset.n0 / (dataset.n0 + dataset.n1)
+                computed_params['evidence_prior'] = np.array([p0, 1. - p0])
+            else:
+                try:
+                    targets = dataset.ds.targets
+                except AttributeError:
+                    targets = [ dataset.ds.dataset.targets[i] for i in dataset.ds.indices ]
+                except Exception as err:
+                    raise err
+                _, f = np.unique(targets, return_counts=True)
+                f = f / f.sum()
+                computed_params['evidence_prior'] = f
+        elif isinstance(eprior_arg, int) or isinstance(eprior_arg, float):
+            # Use this as the scaling
+            computed_params['evidence_prior'] = eprior_arg * np.ones(K) # 
+        else:
+            raise ValueError(
+                'Unknown evidence prior parameter `{}` for EDL'.format(eprior_arg)
+            )
+        
+        # Remove evidence_prior param
+        if 'evidence_prior' in params:
+            del params['evidence_prior']
+
+        all_params.update(computed_params)
+        all_params.update(params)
+        
         return all_params
