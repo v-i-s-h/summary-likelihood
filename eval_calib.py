@@ -89,12 +89,21 @@ def evaluate_model_calibration(preds, n_bins=10):
     results['nll_uncal_val'] = F.nll_loss(torch.log(scores_val), y_true_val).detach().item()
     results['nll_uncal_test'] = F.nll_loss(torch.log(scores_test), y_true_test).detach().item()
 
-    calib_results_un = calibration_error(scores_test, y_true_test, n_bins=n_bins, norm='l1')
-    results['ece_uncal'] = calib_results_un.item()
+    results['ece_uncal_val'] = calibration_error(
+                                    scores_val, y_true_val, 
+                                    n_bins=n_bins, norm='l1'
+                                ).item()
+    results['ece_uncal_test'] = calibration_error(
+                                    scores_test, y_true_test, 
+                                    n_bins=n_bins, norm='l1'
+                                ).item()
     
-    results['acc'] = accuracy(scores_test, y_true_test).detach().item()
+    results['acc_val'] = accuracy(scores_val, y_true_val).detach().item()
+    results['acc_test'] = accuracy(scores_test, y_true_test).detach().item()
 
-    results['auroc'] = auroc(scores_test, y_true_test,
+    results['auroc_val'] = auroc(scores_val, y_true_val,
+                                num_classes=preds['n_classes']).detach().item()
+    results['auroc_test'] = auroc(scores_test, y_true_test,
                                 num_classes=preds['n_classes']).detach().item()
 
     return results
@@ -116,14 +125,14 @@ def run_evaluation(model_str, ckpt_file, dataset, ds_params, transform, corrupti
         
         # If testing on a corruption, use entire test set as validation for calibration
         print("INFO: Testing on corruption {}. "
-            "Using entire test set of clean data for calibration".format(corruption))
-        valset = DatasetClass(**ds_params, split='test', transform=x_transform)
+            "Using entire test set of clean data for validation".format(corruption))
+        valset = DatasetClass(**ds_params, split='val', transform=x_transform)
         valloader = DataLoader(dataset=valset, batch_size=256, shuffle=True)
 
         testset = DatasetClass(**test_params, split='test', transform=x_transform)
         testloader = DataLoader(dataset=testset, batch_size=256, shuffle=False)
     else:
-        print("INFO: Using part of test set for calibration")
+        print("INFO: Using part of test set for validation")
         testset = DatasetClass(**ds_params, split='test', transform=x_transform)
 
         n = len(testset)
@@ -235,10 +244,10 @@ def main():
     print("---------------------")
     # Compute statistics
     n = df_good.shape[0]
-    mean_uncalib_ece = np.mean(df_good.ece_uncal)
-    mean_acc = np.mean(df_good.acc)
-    err_uncalib_ece = np.std(df_good.ece_uncal) / np.sqrt(n)
-    err_acc = np.std(df_good.acc) / np.sqrt(n)
+    mean_uncalib_ece = np.mean(df_good.ece_uncal_val)
+    mean_acc = np.mean(df_good.acc_val)
+    err_uncalib_ece = np.std(df_good.ece_uncal_val) / np.sqrt(n)
+    err_acc = np.std(df_good.acc_val) / np.sqrt(n)
 
     print("ECE (Uncalibrated) = {:.4f} \pm {:.4f}".format(mean_uncalib_ece, err_uncalib_ece))
     print("Accuracy           = {:.4f} \pm {:.4f}".format(mean_acc, err_acc))
