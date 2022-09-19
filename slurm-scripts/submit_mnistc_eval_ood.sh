@@ -26,13 +26,13 @@ do
         # LeNet
         echo "--------------- SL: LeNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
         python eval_ood.py \
-            --dataset $OOD_DATASET \
+            --ood $OOD_DATASET \
             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-alpha$alpha_part-sz$dssize-*
         
         # ConvNet
         echo "------------- SL: ConvNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
         python eval_ood.py \
-            --dataset $OOD_DATASET \
+            --ood $OOD_DATASET \
             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-alpha$alpha_part-sz$dssize-*
 
     done
@@ -50,13 +50,13 @@ do
         # LeNet
         echo "--------------- SL: LeNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
         python eval_ood.py \
-            --dataset $OOD_DATASET \
+            --ood $OOD_DATASET \
             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-alpha$alpha_part-sz$dssize-*
         
         # ConvNet
         echo "--------------- SL: ConvNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
         python eval_ood.py \
-            --dataset $OOD_DATASET \
+            --ood $OOD_DATASET \
             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-alpha$alpha_part-sz$dssize-*
     done
 done
@@ -74,13 +74,13 @@ do
         # LeNet
         echo "--------------- SL: LeNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
         python eval_ood.py \
-            --dataset $OOD_DATASET \
+            --ood $OOD_DATASET \
             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-alpha$alpha_part-sz$dssize-*
         
         # ConvNet
         echo "--------------- SL: ConvNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
         python eval_ood.py \
-            --dataset $OOD_DATASET \
+            --ood $OOD_DATASET \
             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-alpha$alpha_part-sz$dssize-*
     done
 done
@@ -94,13 +94,13 @@ do
     # LeNet
     echo "--------------- MFVI: LeNet, SZ = ${dssize} ------------"
     python eval_ood.py \
-        --dataset $OOD_DATASET \
+        --ood $OOD_DATASET \
         --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-sz$dssize-*
     
     # ConvNet
     echo "--------------- MFVI: ConvNet, SZ = ${dssize} ------------"
     python eval_ood.py \
-        --dataset $OOD_DATASET \
+        --ood $OOD_DATASET \
         --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-sz$dssize-*
 done
 
@@ -113,13 +113,13 @@ do
     # LeNet
     echo "--------------- LS: LeNet, SZ = ${dssize} ------------"
     python eval_ood.py \
-        --dataset $OOD_DATASET \
+        --ood $OOD_DATASET \
         --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-sz$dssize-*
     
     # ConvNet
     echo "--------------- LS: ConvNet, SZ = ${dssize} ------------"
     python eval_ood.py \
-        --dataset $OOD_DATASET \
+        --ood $OOD_DATASET \
         --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-sz$dssize-*
 done
 
@@ -132,13 +132,13 @@ do
     # LeNet
     echo "--------------- EDL: LeNet, SZ = ${dssize} ------------"
     python eval_ood.py \
-        --dataset $OOD_DATASET \
+        --ood $OOD_DATASET \
         --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNetEDL/$METHOD-sz$dssize-*
     
     # ConvNet
     echo "--------------- EDL: ConvNet, SZ = ${dssize} ------------"
     python eval_ood.py \
-        --dataset $OOD_DATASET \
+        --ood $OOD_DATASET \
         --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNetEDL/$METHOD-sz$dssize-*
 done
 
@@ -151,13 +151,13 @@ do
     # LeNet
     echo "--------------- EDL: LeNet, SZ = ${dssize} ------------"
     python eval_ood.py \
-        --dataset $OOD_DATASET \
+        --ood $OOD_DATASET \
         --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNetEDL/$METHOD-sz$dssize-*
     
     # ConvNet
     echo "--------------- EDL: ConvNet, SZ = ${dssize} ------------"
     python eval_ood.py \
-        --dataset $OOD_DATASET \
+        --ood $OOD_DATASET \
         --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNetEDL/$METHOD-sz$dssize-*
 done
 
@@ -170,12 +170,12 @@ do
     # LeNet
     echo "--------------- EDL: LeNet, SZ = ${dssize} ------------"
     python eval_ood.py \
-        --dataset $OOD_DATASET \
+        --ood $OOD_DATASET \
         --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNetEDL/$METHOD-sz$dssize-*
     
     # ConvNet
     echo "--------------- EDL: ConvNet, SZ = ${dssize} ------------"
     python eval_ood.py \
-        --dataset $OOD_DATASET \
+        --ood $OOD_DATASET \
         --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNetEDL/$METHOD-sz$dssize-*
 done

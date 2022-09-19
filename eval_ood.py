@@ -5,18 +5,13 @@ import pickle
 import json
 import glob
 import argparse
-import copy
 from datetime import datetime
 
 from tqdm import tqdm
 
-import numpy as np
 import torch
-import torch.optim as optim
-import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
 
 import pandas as pd
 
@@ -62,17 +57,16 @@ def get_predictions(model, dataloader, msg="Getting predictions"):
     return y_true, scores
 
 
-def get_model_predictions(model, valloader, testloader, n_bins=10):
-    # Get predictions from validation set and calibrate models
-    y_true_val, scores_val = get_predictions(model, valloader)
+def get_model_predictions(model, data_loaders):
+    # data_loaders is a dict of {"label": <DataLoader>}
     
-    ### Evaluate calibration of testloader
-    y_true_test, scores_test = get_predictions(model, testloader)
+    predictions = {}
+    ### Get predictions on dataloaders
+    for label, dataloader in tqdm(data_loaders.items(), desc="Testing datasets"):
+        y_true, scores = get_predictions(model, dataloader)
+        predictions[label] = [y_true, scores]
 
-    return {
-        'val': [ y_true_val, scores_val],
-        'test': [ y_true_test, scores_test]
-    }
+    return predictions
 
 
 def compute_mean_entropy(p):
@@ -83,43 +77,35 @@ def evaluate_model_performance(preds, n_bins=10):
     # To store results
     results = {}
     
-    # Get predictions from validation set and calibrate models
-    y_true_val, scores_val = preds['val']
+    # Get the predictions for OOD dataset
+    _, scores_ood = preds['ood']
     
-    ### Evaluate calibration of testloader
-    y_true_test, scores_test = preds['test']
+    # Get the predictions for in domain test dataset
+    _, scores_test = preds['indomain']
     
-
-    results['ent_val'] = compute_mean_entropy(scores_val).detach().item()
+    results['ent_ood'] = compute_mean_entropy(scores_ood).detach().item()
     results['ent_test'] = compute_mean_entropy(scores_test).detach().item()
+    results['ent_delta'] = results['ent_ood'] - results['ent_test']
 
     return results
 
 
-def run_evaluation(model_str, ckpt_file, transform, dataset):
+def run_evaluation(model_str, ckpt_file, dataset, ds_params, transform, ood_dataset):
+    
     # Setup input transform
     x_transform = getattr(transforms, transform)() # returns a transformation object
 
-    # Load dataset
+    # Load OOD dataset
+    OODDatasetClass = getattr(datasets, ood_dataset)
+    ood_testset = OODDatasetClass(split='test', transform=x_transform)
+    ood_testloader = DataLoader(dataset=ood_testset, batch_size=256, shuffle=False)
+
+    # Load In-domain dataser
     DatasetClass = getattr(datasets, dataset)
-
-    valset = DatasetClass(split='val', transform=x_transform)
-    valloader = DataLoader(dataset=valset, batch_size=256, shuffle=True)
-
-    testset = DatasetClass(split='test', transform=x_transform)
+    if 'size' in ds_params:
+        del ds_params['size']
+    testset = DatasetClass(**ds_params, split='test', transform=x_transform)
     testloader = DataLoader(dataset=testset, batch_size=256, shuffle=False)
-
-    n = len(testset)
-    indices = torch.randperm(n)
-    val_size = int(0.25 * n)
-    val_indices = indices[:val_size]
-    test_indices = indices[val_size:]
-
-    valloader = DataLoader(dataset=testset, batch_size=256, 
-                            sampler=SubsetRandomSampler(val_indices))
-    testloader = DataLoader(dataset=testset, batch_size=256, 
-                            sampler=SubsetRandomSampler(test_indices))
-    
 
     # CUDA config
     device = 'cpu'
@@ -144,10 +130,12 @@ def run_evaluation(model_str, ckpt_file, transform, dataset):
     ModelClass = getattr(models, model_str)
     model = ModelClass(n_labels).to(device)
     model.load_state_dict(model_weights)
-    # model.load_state_dict(torch.load(weights_file, map_location=torch.device(device)))
 
     # Get predictions from model
-    preds = get_model_predictions(model, valloader, testloader)
+    preds = get_model_predictions(model, {
+                "ood": ood_testloader,
+                "indomain": testloader
+            })
     del model # Free model
     preds['n_classes'] = n_labels
 
@@ -156,7 +144,7 @@ def run_evaluation(model_str, ckpt_file, transform, dataset):
     return r
 
 
-def evaluate_model_in_dir(model_dir, dataset):
+def evaluate_model_in_dir(model_dir, ood_dataset):
     config_path = os.path.join(model_dir, "config.json")
     weights_path = os.path.join(model_dir, "model.pth")
 
@@ -167,12 +155,13 @@ def evaluate_model_in_dir(model_dir, dataset):
     # Get the best weights file
     ckpt_path = glob.glob(model_dir + '/step=*.ckpt')[-1]
 
-    
     r = run_evaluation(
             config['model'], 
             ckpt_path, 
+            config['dataset'],
+            config['ds_params'], 
             config['transform'],
-            dataset)
+            ood_dataset)
 
     return r  
 
@@ -183,7 +172,7 @@ def main():
 
     # Set up command line args parser
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, required=True, default=None)
+    parser.add_argument('--ood', type=str, required=True, default=None)
     parser.add_argument('--models', nargs='+', required=True)
     args = parser.parse_args()
 
@@ -198,12 +187,12 @@ def main():
         model_results = []
         for j in range(1):
             r = {'model_id': model_dir, 'round': j}
-            _r = evaluate_model_in_dir(model_dir, args.dataset)
+            _r = evaluate_model_in_dir(model_dir, args.ood)
             r.update(_r)
             model_results.append(r)
         
         results_file = os.path.join(model_dir, 
-                            "ood_results_{}.pkl".format(args.dataset))
+                            "ood_results_{}.pkl".format(args.ood))
         with open(results_file, 'wb') as f:
             pickle.dump(model_results, f)
         results.extend(model_results)
