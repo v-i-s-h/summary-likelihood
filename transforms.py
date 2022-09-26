@@ -23,7 +23,7 @@ def normalize_x(mean=[0.0], std=[1.0]):
 
     return transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.0], std=[1.0])
+        transforms.Normalize(mean=mean, std=std)
     ])
 
 def normalize_x_cifar():
