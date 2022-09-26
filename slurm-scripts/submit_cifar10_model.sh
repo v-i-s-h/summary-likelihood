@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --time=36:00:00
-#SBATCH --mem-per-cpu=16G
+#SBATCH --time=6:00:00
+#SBATCH --mem-per-cpu=6G
 #SBATCH --gres=gpu:1
 #SBATCH --exclude=dgx[1-7]
 #SBATCH --array=1-5
@@ -13,58 +13,108 @@ source activate bayes
 
 export DISABLE_PBAR=1
 
-OUTDIR="zoo/multiclass/sl"
+
+# # # RUN SL
+# OUTDIR="zoo/multiclass/sl"
+# MAX_STEPS=3000
+# METHOD="sl"
+
+# # for alpha in 0.01 0.1 1.0 10.0 100.0 0.05 0.5 5.0 25.0 50.0 75.0
+# for alpha in 0.01 0.1 1.0 10.0
+# do
+#     alpha_part=`printf '%1.0e' $alpha`
+
+#     python train.py \
+#         --method $METHOD --params alpha=$alpha \
+#         --dataset CIFAR10 --transform normalize_x_cifar \
+#         --model VGG11 \
+#         --max-steps $MAX_STEPS \
+#         --batch-size 256 \
+#         --mc-samples 32 \
+#         --outdir $OUTDIR \
+#         --prefix $METHOD-alpha$alpha_part-$SLURM_ARRAY_TASK_ID \
+#         --seed $SLURM_ARRAY_TASK_ID
+# done
+
+
+# # RUN LS
+# OUTDIR="zoo/multiclass/ls"
+# MAX_STEPS=3000
+# METHOD="ls"
+
+# python train.py \
+#     --method $METHOD --params smoothing=0.05 \
+#     --dataset CIFAR10 --transform normalize_x_cifar \
+#     --model VGG11 \
+#     --max-steps $MAX_STEPS \
+#     --batch-size 256 \
+#     --mc-samples 32 \
+#     --outdir $OUTDIR \
+#     --prefix $METHOD-$SLURM_ARRAY_TASK_ID \
+#     --seed $SLURM_ARRAY_TASK_ID
+
+
+# # RUN MFVI
+# OUTDIR="zoo/multiclass/mfvi"
+# MAX_STEPS=3000
+# METHOD="mfvi"
+
+# python train.py \
+#     --method $METHOD \
+#     --dataset CIFAR10 --transform normalize_x_cifar \
+#     --model VGG11 \
+#     --max-steps $MAX_STEPS \
+#     --batch-size 256 \
+#     --mc-samples 32 \
+#     --outdir $OUTDIR \
+#     --prefix $METHOD-$SLURM_ARRAY_TASK_ID \
+#     --seed $SLURM_ARRAY_TASK_ID
+
+
+# EDL
+OUTDIR="zoo/multiclass/edl/uniform-prior"
 MAX_STEPS=3000
-METHOD="sl"
-
-
-# for alpha in 0.01 0.1 1.0 10.0 100.0 0.05 0.5 5.0 25.0 50.0 75.0
-for alpha in 0.01 0.1 1.0 10.0
-do
-    alpha_part=`printf '%1.0e' $alpha`
-
-    python train.py \
-        --method $METHOD --params alpha=$alpha \
-        --dataset CIFAR10 --transform normalize_x_cifar \
-        --model VGG11 \
-        --max-steps $MAX_STEPS \
-        --batch-size 256 \
-        --mc-samples 32 \
-        --outdir $OUTDIR \
-        --prefix $METHOD-alpha$alpha_part-$SLURM_ARRAY_TASK_ID \
-        --seed $SLURM_ARRAY_TASK_ID
-done
-
-
-# RUN LS
-OUTDIR="zoo/multiclass/ls"
-MAX_STEPS=3000
-METHOD="ls"
+METHOD="edl"
 
 python train.py \
-    --method $METHOD --params smoothing=0.05 \
+    --method $METHOD --params annealing_step=1000 \
     --dataset CIFAR10 --transform normalize_x_cifar \
-    --model VGG11 \
+    --model VGG11EDL \
     --max-steps $MAX_STEPS \
     --batch-size 256 \
-    --mc-samples 32 \
     --outdir $OUTDIR \
-    --prefix $METHOD-$SLURM_ARRAY_TASK_ID \
-    --seed $SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-$SLURM_ARRAY_TASK_ID
 
 
-# RUN MFVI
-OUTDIR="zoo/multiclass/mfvi"
+# EDL + computed
+OUTDIR="zoo/multiclass/edl/computed-prior"
 MAX_STEPS=3000
-METHOD="mfvi"
+METHOD="edl"
 
 python train.py \
     --method $METHOD \
+    --params evidence_prior=computed,annealing_step=1000 \
     --dataset CIFAR10 --transform normalize_x_cifar \
-    --model VGG11 \
+    --model VGG11EDL \
     --max-steps $MAX_STEPS \
     --batch-size 256 \
     --mc-samples 32 \
     --outdir $OUTDIR \
-    --prefix $METHOD-$SLURM_ARRAY_TASK_ID \
-    --seed $SLURM_ARRAY_TASK_ID
+    --prefix $METHOD-$SLURM_ARRAY_TASK_ID
+
+
+# EDL + 0.1
+OUTDIR="zoo/multiclass/edl/skewed-prior"
+MAX_STEPS=3000
+METHOD="edl"
+
+python train.py \
+    --method $METHOD \
+    --params evidence_prior=0.1,annealing_step=1000 \
+    --dataset CIFAR10 --transform normalize_x_cifar \
+    --model VGG11EDL \
+    --max-steps $MAX_STEPS \
+    --batch-size 256 \
+    --mc-samples 32 \
+    --outdir $OUTDIR \
+    --prefix $METHOD-$SLURM_ARRAY_TASK_ID
