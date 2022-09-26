@@ -34,7 +34,7 @@ do
     alpha_part=`printf '%1.0e' $alpha`
 
     python eval_calib.py \
-        --models  ${basedir}/sl-alpha$alpha_part-*
+        --models  ${OUTDIR}/sl-alpha$alpha_part-*
     echo "-----------------------------------------------------------------"
 done
 echo "=========================================================================="
