@@ -17,7 +17,7 @@ class CIFAR10(DatasetBase):
         'brightness',
         'contrast',
         'defocus_blur',
-        'elastic_transform'
+        'elastic_transform',
         'fog',
         'frost',
         'gaussian_blur',
@@ -25,7 +25,7 @@ class CIFAR10(DatasetBase):
         'glass_blur',
         'identity',
         'impulse_noise',
-        'jpeg_compression'
+        'jpeg_compression',
         'motion_blur',
         'pixelate',
         'saturate',
