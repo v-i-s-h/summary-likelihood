@@ -58,7 +58,7 @@ class CIFAR10(DatasetBase):
             if len(corruption_severity_pair) > 1:
                 self.severity_level = int(corruption_severity_pair[1])
             else:
-                self.severity_level = 1 # Default level
+                self.severity_level = 3 # Default level
         else:
             self.corruption = 'identity'
             self.severity_level = None
