@@ -27,7 +27,8 @@ def normalize_x(mean=[0.0], std=[1.0]):
     ])
 
 def normalize_x_cifar():
-    return normalize_x(
-        mean=(0.4914, 0.4822, 0.4465),
-        std=(0.2471, 0.2435, 0.2616)
-    )
+    # return normalize_x(
+    #     mean=(0.4914, 0.4822, 0.4465),
+    #     std=(0.2471, 0.2435, 0.2616)
+    # )
+    return normalize_x()
