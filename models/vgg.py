@@ -85,38 +85,6 @@ cfgs = {
 }
 
 
-class VGG3(nn.Module):
-    def __init__(self, K=10,
-            prior_mu=0.0, prior_sigma=1.0,
-            posterior_mu_init=0.0, posterior_rho_init=-3.0):
-        super().__init__()
-        self.model = VGGBase(make_layers(cfgs['vgg3']), K=K) # build deterministic model
-        # script_dir = os.path.dirname(__file__)
-        # state_dict = torch.load(script_dir + "/state_dicts/vgg11_bn.pt")
-        # self.model.load_state_dict(state_dict)
-        # convert to BNN
-        dnn_to_bnn(self.model, {
-            "prior_mu": prior_mu,
-            "prior_sigma": prior_sigma,
-            "posterior_mu_init": posterior_mu_init,
-            "posterior_rho_init": posterior_rho_init,
-            "type": "Reparameterization",
-            "moped_enable": True,
-            "moped_delta": 0.20
-        })
-
-        self.num_classes = K
-
-    def forward(self, x, return_kl=True):
-        out = self.model(x)
-
-        if return_kl:
-            kl = get_kl_loss(self.model)
-            return out, kl
-
-        return out
-
-
 class VGG11(nn.Module):
     def __init__(self, K=10,
             prior_mu=0.0, prior_sigma=1.0,
@@ -147,6 +115,12 @@ class VGG11(nn.Module):
             return out, kl
 
         return out
+
+    def get_logits(self, x):
+        return self.model.get_logits(x)
+
+    def get_softmax(self, x):
+        return self.model.get_softmax(x)
 
 
 class VGG11EDL(VGG11):
@@ -180,90 +154,3 @@ class VGG11EDL(VGG11):
             scores = compute_prob_from_evidence(self.evidence_prior, evidence)
 
         return scores
-
-
-class VGG13(nn.Module):
-    def __init__(self, K=10,
-            prior_mu=0.0, prior_sigma=1.0,
-            posterior_mu_init=0.0, posterior_rho_init=-3.0):
-        super().__init__()
-        self.model = VGGBase(make_layers(cfgs['vgg13']), K=K) # build deterministic model
-        # convert to BNN
-        dnn_to_bnn(self.model, {
-            "prior_mu": prior_mu,
-            "prior_sigma": prior_sigma,
-            "posterior_mu_init": posterior_mu_init,
-            "posterior_rho_init": posterior_rho_init,
-            "type": "Reparameterization",
-            "moped_enable": True,
-            "moped_delta": 0.20
-        })
-
-        self.num_classes = K
-
-    def forward(self, x, return_kl=True):
-        out = self.model(x)
-
-        if return_kl:
-            kl = get_kl_loss(self.model)
-            return out, kl
-
-        return out
-
-
-class VGG16(nn.Module):
-    def __init__(self, K=10,
-            prior_mu=0.0, prior_sigma=1.0,
-            posterior_mu_init=0.0, posterior_rho_init=-3.0):
-        super().__init__()
-        self.model = VGGBase(make_layers(cfgs['vgg16']), K=K) # build deterministic model
-        # convert to BNN
-        dnn_to_bnn(self.model, {
-            "prior_mu": prior_mu,
-            "prior_sigma": prior_sigma,
-            "posterior_mu_init": posterior_mu_init,
-            "posterior_rho_init": posterior_rho_init,
-            "type": "Reparameterization",
-            "moped_enable": True,
-            "moped_delta": 0.20
-        })
-
-        self.num_classes = K
-
-    def forward(self, x, return_kl=True):
-        out = self.model(x)
-
-        if return_kl:
-            kl = get_kl_loss(self.model)
-            return out, kl
-
-        return out
-
-
-class VGG19(nn.Module):
-    def __init__(self, K=10,
-            prior_mu=0.0, prior_sigma=1.0,
-            posterior_mu_init=0.0, posterior_rho_init=-3.0):
-        super().__init__()
-        self.model = VGGBase(make_layers(cfgs['vgg19']), K=K) # build deterministic model
-        # convert to BNN
-        dnn_to_bnn(self.model, {
-            "prior_mu": prior_mu,
-            "prior_sigma": prior_sigma,
-            "posterior_mu_init": posterior_mu_init,
-            "posterior_rho_init": posterior_rho_init,
-            "type": "Reparameterization",
-            "moped_enable": True,
-            "moped_delta": 0.20
-        })
-
-        self.num_classes = K
-
-    def forward(self, x, return_kl=True):
-        out = self.model(x)
-
-        if return_kl:
-            kl = get_kl_loss(self.model)
-            return out, kl
-
-        return out
