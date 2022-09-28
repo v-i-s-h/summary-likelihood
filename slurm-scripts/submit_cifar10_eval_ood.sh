@@ -16,7 +16,7 @@ OOD_DATASET="SVHN"
 
 echo "========================= SL: CIFAR10 + VGG11 =========================="
 OUTDIR="zoo/multiclass/sl/CIFAR10/VGG11"
-for alpha in 0.01 0.1 1.0 10.0 0.05 0.5 5.0 25.0 50.0 75.0
+for alpha in 0.01 0.1 1.0 10.0 0.05 0.5 5.0 25.0 50.0
 do
     alpha_part=`printf '%1.0e' $alpha`
 
@@ -45,22 +45,22 @@ echo "========================================================================="
 
 
 echo "================================= EDL ==================================="
-OUTDIR="zoo/multiclass/edl/uniform-prior/CIFAR10/VGG11EDL"
+OUTDIR="zoo/multiclass/edl/CIFAR10/VGG11EDL"
 python eval_ood.py \
     --ood $OOD_DATASET \
     --models $OUTDIR/edl-*
 echo "========================================================================="
 
-echo "================================= EDL ==================================="
-OUTDIR="zoo/multiclass/edl/computed-prior/CIFAR10/VGG11EDL"
-python eval_ood.py \
-    --ood $OOD_DATASET \
-    --models $OUTDIR/edl-*
-echo "========================================================================="
+# echo "================================= EDL ==================================="
+# OUTDIR="zoo/multiclass/edl/computed-prior/CIFAR10/VGG11EDL"
+# python eval_ood.py \
+#     --ood $OOD_DATASET \
+#     --models $OUTDIR/edl-*
+# echo "========================================================================="
 
-echo "================================= EDL ==================================="
-OUTDIR="zoo/multiclass/edl/skewed-prior/CIFAR10/VGG11EDL"
-python eval_ood.py \
-    --ood $OOD_DATASET \
-    --models $OUTDIR/edl-*
-echo "========================================================================="
+# echo "================================= EDL ==================================="
+# OUTDIR="zoo/multiclass/edl/skewed-prior/CIFAR10/VGG11EDL"
+# python eval_ood.py \
+#     --ood $OOD_DATASET \
+#     --models $OUTDIR/edl-*
+# echo "========================================================================="
