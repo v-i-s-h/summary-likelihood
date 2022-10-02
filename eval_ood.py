@@ -70,7 +70,7 @@ def get_model_predictions(model, data_loaders):
 
 
 def compute_mean_entropy(p):
-    return torch.sum(-torch.log(p) * p, dim=1).mean()
+    return torch.nansum(-torch.log(p) * p, dim=1).nanmean()
 
 
 def evaluate_model_performance(preds, n_bins=10):
