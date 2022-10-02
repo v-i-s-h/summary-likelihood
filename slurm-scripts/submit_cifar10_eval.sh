@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --time=6:00:00
+#SBATCH --time=8:00:00
 #SBATCH --mem-per-cpu=6G
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:a100:1
 #SBATCH --exclude=dgx[1-7]
 #SBATCH --array=1-20
 #SBATCH --output=logs/job-%A-%a.out
@@ -41,39 +41,51 @@ esac
 
 echo "======================== SL: CIFAR10 + VGG11 ========================="
 OUTDIR="zoo/multiclass/sl/CIFAR10/VGG11"
-for alpha in 0.01 0.1 1.0 10.0 0.05 0.5 5.0 25.0 50.0
+for alpha in 500 1000 5000 10000
 do
     alpha_part=`printf '%1.0e' $alpha`
 
     echo "--------------------- SL: alpha = ${alpha_part}------------------"
-    python eval_calib.py \
-        --corruption $CORRUPTION \
-        --models  ${OUTDIR}/sl-alpha$alpha_part-*
+    for level in {1..5}
+    do
+        python eval_calib.py \
+            --corruption $CORRUPTION-$level \
+            --models  ${OUTDIR}/sl-alpha$alpha_part-*
+    done
 done
 echo "=========================================================================="
 
 
 echo "========================= MFVI: CIFAR10 + VGG11 =========================="
 OUTDIR="zoo/multiclass/mfvi/CIFAR10/VGG11"
-python eval_calib.py \
-    --corruption $CORRUPTION \
-    --models  ${OUTDIR}/mfvi-*
+for level in {1..5}
+do
+    python eval_calib.py \
+        --corruption $CORRUPTION-$level \
+        --models  ${OUTDIR}/mfvi-*
+done
 echo "=========================================================================="
 
 
 echo "======================== LS: CIFAR10 + VGG11 ========================="
 OUTDIR="zoo/multiclass/ls/CIFAR10/VGG11"
-python eval_calib.py \
-    --corruption $CORRUPTION \
+for level in {1..5}
+do
+    python eval_calib.py \
+    --corruption $CORRUPTION-$level \
     --models  ${OUTDIR}/ls-*
+done
 echo "========================================================================="
 
 
 echo "================================= EDL ==================================="
 OUTDIR="zoo/multiclass/edl/CIFAR10/VGG11EDL"
-python eval_calib.py \
-    --corruption $CORRUPTION \
+for level in {1..5}
+do
+    python eval_calib.py \
+    --corruption $CORRUPTION-$level \
     --models  ${OUTDIR}/edl-*
+done
 echo "========================================================================="
 
 
@@ -90,3 +102,57 @@ echo "========================================================================="
 #     --corruption $CORRUPTION \
 #     --models  ${OUTDIR}/edl-*
 # echo "========================================================================="
+
+
+
+# ------------------------------------------------------------------------------
+# echo "================================= EDL ==================================="
+# OUTDIR="zoo/multiclass-v2/edl/CIFAR10/VGG11EDL"
+
+# for i in 1 2 3 4 5
+# do
+#     python eval_calib.py \
+#         --corruption $CORRUPTION-$i \
+#         --models  ${OUTDIR}/edl-*
+# done
+# echo "========================================================================="
+
+
+# echo "========================= MFVI: CIFAR10 + VGG11 =========================="
+# OUTDIR="zoo/multiclass-v2/mfvi/CIFAR10/VGG11"
+# for i in 1 2 3 4 5
+# do
+#     python eval_calib.py \
+#         --corruption $CORRUPTION-$i \
+#         --models  ${OUTDIR}/mfvi-*
+# done
+# echo "=========================================================================="
+
+
+# echo "======================== LS: CIFAR10 + VGG11 ========================="
+# OUTDIR="zoo/multiclass-v2/ls/CIFAR10/VGG11"
+
+# for i in 1 2 3 4 5
+# do
+#     python eval_calib.py \
+#         --corruption $CORRUPTION-$i \
+#         --models  ${OUTDIR}/ls-*
+# done
+# echo "========================================================================="
+
+
+# echo "======================== SL: CIFAR10 + VGG11 ========================="
+# OUTDIR="zoo/multiclass-v2/sl/CIFAR10/VGG11"
+# for alpha in 100.0 500.0 1000.0 5000.0 10000.0 50000.0
+# do
+#     alpha_part=`printf '%1.0e' $alpha`
+
+#     echo "--------------------- SL: alpha = ${alpha_part}------------------"
+#     for i in 1 2 3 4 5
+#     do
+#         python eval_calib.py \
+#             --corruption $CORRUPTION-$i \
+#             --models  ${OUTDIR}/sl-alpha$alpha_part-*
+#     done
+# done
+# echo "=========================================================================="
