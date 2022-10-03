@@ -14,7 +14,9 @@ def compute_sobs(params, dataset):
     """
         Compute the s_obs from the label frequency
     """
-    _, f = np.unique(dataset.ds.targets, return_counts=True)
+    _, f = np.unique(
+        [dataset.ds.dataset.targets[i] for i in dataset.ds.indices], 
+        return_counts=True)
     f = f / f.sum()
 
     return f
