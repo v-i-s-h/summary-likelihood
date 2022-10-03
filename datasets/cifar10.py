@@ -38,7 +38,7 @@ class CIFAR10(DatasetBase):
 
     def __init__(self, 
             split, 
-            corruption=None, # Can be zoom_blur, or zoom_blur-5
+            corruption=None, # Can be like zoom_blur, or zoom_blur-5
             transform=None,
             root=os.path.abspath(os.path.join(
                     os.path.dirname(os.path.realpath(__file__)), 
@@ -146,11 +146,12 @@ class CIFAR10(DatasetBase):
 class CIFAR10Im(CIFAR10):
     def __init__(self, 
             split, 
+            corruption=None,
             transform=None,
             root=os.path.abspath(os.path.join(
                     os.path.dirname(os.path.realpath(__file__)), 
                     "./../data/"))) -> None:
-        super().__init__(split=split, transform=transform, root=root)
+        super().__init__(split=split, corruption=corruption, transform=transform, root=root)
 
         # Modify the sample to make class imbalance
         K = 10 # number of classes
