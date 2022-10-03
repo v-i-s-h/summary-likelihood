@@ -38,11 +38,49 @@ class SoftHistogram(nn.Module):
 
     def forward(self, x):
         """Computes soft histogram"""
+
         x = torch.unsqueeze(x, 1) - torch.unsqueeze(self.centers, 1)
         x = torch.sigmoid(self.sigma * (x + self.delta/2)) - torch.sigmoid(self.sigma * (x - self.delta/2))
         x = x.sum(dim=-1) + 1e-6 # epsilon for zero bins
         x = x / x.sum(dim=-1).unsqueeze(1)
 
+        return x
+
+
+class AdaptiveSoftHistogram(nn.Module):
+    """
+        Create soft histogram from samples
+    """
+    def __init__(self, bin_edges, sigma=500):
+        """
+        Parameters
+        ----------
+        bin_edges : List[float]
+            bin edges for each bin, dim = n_bins + 1
+        sigma : float
+            Slope of sigmoid
+        """
+        super().__init__()
+        self.sigma = sigma
+        bin_edges = torch.tensor(bin_edges)
+        t1 = bin_edges[:-1]
+        t2 = bin_edges[1:]
+        bin_widths = t2 - t1
+        bin_centers = t1 + 0.5 * bin_widths
+
+        self.delta = nn.Parameter(bin_widths.unsqueeze(1)/2, requires_grad=False)
+        self.centers = nn.Parameter(bin_centers, requires_grad=False)
+
+    def forward(self, x):
+        """Computes soft histogram"""
+
+        x = torch.unsqueeze(x, 1) - torch.unsqueeze(self.centers, 1)
+        _t1 = torch.sigmoid(self.sigma * (x + self.delta))
+        _t2 = torch.sigmoid(self.sigma * (x - self.delta))
+        x = _t1 - _t2
+        x = x.sum(dim=-1) + 1e-6 # epsilon for zero bins
+        x = x / x.sum(dim=-1).unsqueeze(1)
+        
         return x
 
 
@@ -180,7 +218,10 @@ def compute_sobs(params, dataset):
 
     # Quantize base measure
     K = params.get('bins', 10) # Use 10 as default value
-    bin_edges = np.linspace(1/K, 1, K)
+    if 'bin_edges' in params:
+        bin_edges = np.array(params['bin_edges'][1:]) # Because first bin edge is 0.0
+    else:
+        bin_edges = np.linspace(1/K, 1, K)
     base_cdf = base_measure.cdf(bin_edges)
     sobs = base_cdf - np.insert(base_cdf[:-1], 0, 0)
     # bin_center = bin_edges - 0.50 * 1 / K
@@ -208,7 +249,9 @@ def compute_sobs_multi(params, dataset):
 
 class SummaryLikelihood(BaseModel):
     def __init__(self, model,
-            sobs, alpha=1.0,
+            sobs, 
+            bin_edges=None,
+            alpha=1.0,
             lam_kl=1.0, lam_sl=1.0, tau=0.0,
             class_weight=None, mc_samples=32) -> None:
         # Checks
@@ -226,13 +269,19 @@ class SummaryLikelihood(BaseModel):
 
         # Histogram estimator
         if self.model.num_classes == 2:
-            self.hist_est = SoftHistogram(bins=self.partitions, 
+            if bin_edges:
+                print("INFO: Using AdaptiveSoftHistogram with binedges {}".format(bin_edges))
+                print("INFO: sobs = {}".format(sobs))
+                self.hist_est = AdaptiveSoftHistogram(bin_edges, sigma=500)
+            else:
+                print("INFO: Using equal bin histogram")
+                print("INFO: sobs = {}".format(sobs))
+                self.hist_est = SoftHistogram(bins=self.partitions, 
                             min=0, max=1, sigma=500).to(self.device)
         else:
             self.hist_est = MultiSoftHistogram(0.95, 0.85, 80).to(self.device)
 
         self.save_hyperparameters(ignore=['model'], logger=False)
-
 
     def compute_loss(self, y_pred, y, kl_loss):
         """
@@ -318,10 +367,16 @@ class SummaryLikelihood(BaseModel):
 
         # Get sobs
         if dataset.n_labels == 2:
+            if 'adahist':
+                params['bin_edges'] = [
+                    0.00, 0.01, 0.05, 0.10, 0.90, 0.95, 0.99, 1.00
+                ]
             sobs = compute_sobs(params, dataset)
         else:
             sobs = compute_sobs_multi(params, dataset)
         computed_params['sobs'] = sobs
+        if 'adahist' in params:
+            computed_params['bin_edges'] = params['bin_edges']
 
         computed_params['alpha'] = params.get('alpha', 1.0)
         
