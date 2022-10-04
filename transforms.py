@@ -36,3 +36,15 @@ def normalize_x_cifar_v2():
         mean=(0.4914, 0.4822, 0.4465),
         std=(0.2471, 0.2435, 0.2616)
     )
+
+
+def tensorize():
+    return transforms.Compose([
+        transforms.ToTensor()
+    ])
+
+
+def normalize_x_sst():
+    # Placeholder for normalization
+    # Embeddings are used - so no normalization to be applied
+    return None
