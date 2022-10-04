@@ -367,7 +367,7 @@ class SummaryLikelihood(BaseModel):
 
         # Get sobs
         if dataset.n_labels == 2:
-            if 'adahist':
+            if 'adahist' in params:
                 params['bin_edges'] = [
                     0.00, 0.01, 0.05, 0.10, 0.90, 0.95, 0.99, 1.00
                 ]
