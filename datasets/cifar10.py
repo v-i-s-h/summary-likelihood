@@ -154,28 +154,54 @@ class CIFAR10Im(CIFAR10):
         super().__init__(split=split, corruption=corruption, transform=transform, root=root)
 
         # Modify the sample to make class imbalance
-        K = 10 # number of classes
-        idxs = [] # list of indices of each class
-        for i in range(K):
-            idx_i = [j for j in self.ds.indices if self.ds.dataset.targets[j] == i]
-            idxs.append(idx_i)
-        
-        
-        # Deterministically select sample indices for each class
-        for i in range(K):
-            ni = int(np.round(len(idxs[i]) * 2 ** (-i)))
-            if i == K-1:
-                ni *= 2 # Only for last label, keep double the samples.
-            idxs[i] = idxs[i][:ni] # Select first `ni` indices
+        if self.ds: # For identity
+            K = 10 # number of classes
+            idxs = [] # list of indices of each class
+            for i in range(K):
+                idx_i = [j for j in self.ds.indices if self.ds.dataset.targets[j] == i]
+                idxs.append(idx_i)
+            
+            
+            # Deterministically select sample indices for each class
+            for i in range(K):
+                ni = int(np.round(len(idxs[i]) * 2 ** (-i)))
+                if i == K-1:
+                    ni *= 2 # Only for last label, keep double the samples.
+                idxs[i] = idxs[i][:ni] # Select first `ni` indices
 
-        # Flatten into one list
-        sample_ids = []
-        for _idxs in idxs:
-            sample_ids.extend(_idxs)
-        # Shuffle 'deterministically' to break order
-        Generator(PCG64(42)).shuffle(sample_ids)
-        
-        self.ds.indices = sample_ids
+            # Flatten into one list
+            sample_ids = []
+            for _idxs in idxs:
+                sample_ids.extend(_idxs)
+            # Shuffle 'deterministically' to break order
+            Generator(PCG64(42)).shuffle(sample_ids)
+            
+            self.ds.indices = sample_ids
+        else:
+            # For corruptions
+            K = 10
+            idxs = []
+            for i in range(K):
+                idx_i = [j for j in self.y if j == i]
+                idxs.append(idx_i)
+
+            # Deterministically select sample indices for each class
+            for i in range(K):
+                ni = int(np.round(len(idxs[i]) * 2 ** (-i)))
+                if i == K-1:
+                    ni *= 2 # Only for last label, keep double the samples.
+                idxs[i] = idxs[i][:ni] # Select first `ni` indices
+
+            # Flatten into one list
+            sample_ids = []
+            for _idxs in idxs:
+                sample_ids.extend(_idxs)
+            # Shuffle 'deterministically' to break order
+            Generator(PCG64(42)).shuffle(sample_ids)
+            
+            self.x = self.x[sample_ids]
+            self.y = self.y[sample_ids]
+            self.n_samples = len(sample_ids)
 
 
 def test_cifar10im():
