@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --time=24:00:00
 #SBATCH --mem-per-cpu=6G
-#SBATCH --gres=gpu:a100:1
+#SBATCH --gres=gpu:1
 #SBATCH --exclude=dgx[1-7]
 #SBATCH --array=1-20
 #SBATCH --output=logs/job-%A-%a.out

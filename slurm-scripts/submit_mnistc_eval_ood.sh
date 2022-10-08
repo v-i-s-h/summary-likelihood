@@ -110,52 +110,52 @@ OOD_DATASET="FMNIST"
 # done
 
 
-# # -------------------------------- SL (auto prior) -----------------------------
-# OUTDIR="zoo/binary/sl-uneqbin/auto-prior-alphavar"
-# METHOD="sl"
-# for alpha in 100.0 500.0 1000.0 2500.0 5000.0 7500.0 10000.0
-# do
-#     for dssize in 8000 1000
-#     do
-#         alpha_part=`printf '%1.0e' $alpha`
+# -------------------------------- SL (auto prior) -----------------------------
+OUTDIR="zoo/binary/sl-uneqbin/auto-prior-alphavar"
+METHOD="sl"
+for alpha in 10.0 50.0 75.0
+do
+    for dssize in 8000 1000
+    do
+        alpha_part=`printf '%1.0e' $alpha`
 
-#         # LeNet
-#         echo "--------------- SL: LeNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
-#         python eval_ood.py \
-#             --ood $OOD_DATASET \
-#             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-alpha$alpha_part-sz$dssize-*
+        # LeNet
+        echo "--------------- SL: LeNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
+        python eval_ood.py \
+            --ood $OOD_DATASET \
+            --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-alpha$alpha_part-sz$dssize-*
         
-#         # ConvNet
-#         echo "------------- SL: ConvNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
-#         python eval_ood.py \
-#             --ood $OOD_DATASET \
-#             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-alpha$alpha_part-sz$dssize-*
+        # ConvNet
+        echo "------------- SL: ConvNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
+        python eval_ood.py \
+            --ood $OOD_DATASET \
+            --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-alpha$alpha_part-sz$dssize-*
 
-#     done
-# done
+    done
+done
 
-# # ------------------------------ SL (uniform prior) ----------------------------
-# OUTDIR="zoo/binary/sl-uneqbin/uniform-prior-alphavar"
-# METHOD="sl"
-# for alpha in 100.0 500.0 1000.0 2500.0 5000.0 7500.0 10000.0
-# do
-#     for dssize in 8000 1000
-#     do
-#         alpha_part=`printf '%1.0e' $alpha`
+# ------------------------------ SL (uniform prior) ----------------------------
+OUTDIR="zoo/binary/sl-uneqbin/uniform-prior-alphavar"
+METHOD="sl"
+for alpha in 10.0 50.0 75.0
+do
+    for dssize in 8000 1000
+    do
+        alpha_part=`printf '%1.0e' $alpha`
         
-#         # LeNet
-#         echo "--------------- SL: LeNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
-#         python eval_ood.py \
-#             --ood $OOD_DATASET \
-#             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-alpha$alpha_part-sz$dssize-*
+        # LeNet
+        echo "--------------- SL: LeNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
+        python eval_ood.py \
+            --ood $OOD_DATASET \
+            --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-alpha$alpha_part-sz$dssize-*
         
-#         # ConvNet
-#         echo "--------------- SL: ConvNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
-#         python eval_ood.py \
-#             --ood $OOD_DATASET \
-#             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-alpha$alpha_part-sz$dssize-*
-#     done
-# done
+        # ConvNet
+        echo "--------------- SL: ConvNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
+        python eval_ood.py \
+            --ood $OOD_DATASET \
+            --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-alpha$alpha_part-sz$dssize-*
+    done
+done
 
 # # -------------------------------- SL (0.5 prior) ------------------------------
 # OUTDIR="zoo/binary/sl-uneqbin/half-prior-alphavar"
@@ -182,73 +182,73 @@ OOD_DATASET="FMNIST"
 # done
 
 
-# -------------------------------- SL (auto prior) -----------------------------
-OUTDIR="zoo/binary/sl-eqbin/auto-prior-alphavar"
-METHOD="sl"
-for alpha in 100.0 500.0 1000.0 2500.0 5000.0 7500.0 10000.0
-do
-    for dssize in 8000 1000
-    do
-        alpha_part=`printf '%1.0e' $alpha`
+# # -------------------------------- SL (auto prior) -----------------------------
+# OUTDIR="zoo/binary/sl-eqbin/auto-prior-alphavar"
+# METHOD="sl"
+# for alpha in 10.0 50.0 75.0
+# do
+#     for dssize in 8000 1000
+#     do
+#         alpha_part=`printf '%1.0e' $alpha`
 
-        # LeNet
-        echo "--------------- SL: LeNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
-        python eval_ood.py \
-            --ood $OOD_DATASET \
-            --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-alpha$alpha_part-sz$dssize-*
+#         # LeNet
+#         echo "--------------- SL: LeNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
+#         python eval_ood.py \
+#             --ood $OOD_DATASET \
+#             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-alpha$alpha_part-sz$dssize-*
         
-        # ConvNet
-        echo "------------- SL: ConvNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
-        python eval_ood.py \
-            --ood $OOD_DATASET \
-            --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-alpha$alpha_part-sz$dssize-*
+#         # ConvNet
+#         echo "------------- SL: ConvNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
+#         python eval_ood.py \
+#             --ood $OOD_DATASET \
+#             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-alpha$alpha_part-sz$dssize-*
 
-    done
-done
+#     done
+# done
 
-# ------------------------------ SL (uniform prior) ----------------------------
-OUTDIR="zoo/binary/sl-eqbin/uniform-prior-alphavar"
-METHOD="sl"
-for alpha in 100.0 500.0 1000.0 2500.0 5000.0 7500.0 10000.0
-do
-    for dssize in 8000 1000
-    do
-        alpha_part=`printf '%1.0e' $alpha`
+# # ------------------------------ SL (uniform prior) ----------------------------
+# OUTDIR="zoo/binary/sl-eqbin/uniform-prior-alphavar"
+# METHOD="sl"
+# for alpha in 10.0 50.0 75.0
+# do
+#     for dssize in 8000 1000
+#     do
+#         alpha_part=`printf '%1.0e' $alpha`
         
-        # LeNet
-        echo "--------------- SL: LeNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
-        python eval_ood.py \
-            --ood $OOD_DATASET \
-            --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-alpha$alpha_part-sz$dssize-*
+#         # LeNet
+#         echo "--------------- SL: LeNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
+#         python eval_ood.py \
+#             --ood $OOD_DATASET \
+#             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-alpha$alpha_part-sz$dssize-*
         
-        # ConvNet
-        echo "--------------- SL: ConvNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
-        python eval_ood.py \
-            --ood $OOD_DATASET \
-            --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-alpha$alpha_part-sz$dssize-*
-    done
-done
+#         # ConvNet
+#         echo "--------------- SL: ConvNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
+#         python eval_ood.py \
+#             --ood $OOD_DATASET \
+#             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-alpha$alpha_part-sz$dssize-*
+#     done
+# done
 
-# -------------------------------- SL (0.5 prior) ------------------------------
-OUTDIR="zoo/binary/sl-eqbin/half-prior-alphavar"
-METHOD="sl"
+# # -------------------------------- SL (0.5 prior) ------------------------------
+# OUTDIR="zoo/binary/sl-eqbin/half-prior-alphavar"
+# METHOD="sl"
 
-for alpha in 0.01 0.1 1.0 10.0 100.0 0.05 0.5 5.0 25.0 50.0 75.0
-do
-    for dssize in 8000 1000
-    do
-        alpha_part=`printf '%1.0e' $alpha`
+# for alpha in 0.01 0.1 1.0 10.0 100.0 0.05 0.5 5.0 25.0 50.0 75.0
+# do
+#     for dssize in 8000 1000
+#     do
+#         alpha_part=`printf '%1.0e' $alpha`
         
-        # LeNet
-        echo "--------------- SL: LeNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
-        python eval_ood.py \
-            --ood $OOD_DATASET \
-            --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-alpha$alpha_part-sz$dssize-*
+#         # LeNet
+#         echo "--------------- SL: LeNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
+#         python eval_ood.py \
+#             --ood $OOD_DATASET \
+#             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/LeNet/$METHOD-alpha$alpha_part-sz$dssize-*
         
-        # ConvNet
-        echo "--------------- SL: ConvNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
-        python eval_ood.py \
-            --ood $OOD_DATASET \
-            --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-alpha$alpha_part-sz$dssize-*
-    done
-done
+#         # ConvNet
+#         echo "--------------- SL: ConvNet, alpha = ${alpha_part}, SZ = ${dssize} ------------"
+#         python eval_ood.py \
+#             --ood $OOD_DATASET \
+#             --models $OUTDIR/BinaryMNISTC-${dssize}-53-identity/ConvNet/$METHOD-alpha$alpha_part-sz$dssize-*
+#     done
+# done
