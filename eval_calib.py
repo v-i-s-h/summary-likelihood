@@ -17,7 +17,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
-from torchmetrics.functional import calibration_error, accuracy, auroc
+from torchmetrics.functional import calibration_error, accuracy, auroc, f1_score
 
 import pandas as pd
 
@@ -105,6 +105,9 @@ def evaluate_model_calibration(preds, n_bins=10):
                                 num_classes=preds['n_classes']).detach().item()
     results['auroc_test'] = auroc(scores_test, y_true_test,
                                 num_classes=preds['n_classes']).detach().item()
+
+    results['f1_val'] = f1_score(scores_val, y_true_val).detach().item()
+    results['f1_test'] = f1_score(scores_test, y_true_test).detach().item()
 
     return results
 
