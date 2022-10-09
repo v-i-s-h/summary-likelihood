@@ -50,11 +50,11 @@ OUTDIR="zoo/multiclass/edl/uniform-prior/CIFAR10Im/VGG11EDL"
 python eval_ood.py \
     --ood $OOD_DATASET \
     --models $OUTDIR/edl-*
-# echo "========================================================================="
-
-echo "================================= EDL ==================================="
-OUTDIR="zoo/multiclass/edl/computed-prior/CIFAR10Im/VGG11EDL"
-python eval_ood.py \
-    --ood $OOD_DATASET \
-    --models $OUTDIR/edl-*
 echo "========================================================================="
+
+# echo "================================= EDL ==================================="
+# OUTDIR="zoo/multiclass/edl/computed-prior/CIFAR10Im/VGG11EDL"
+# python eval_ood.py \
+#     --ood $OOD_DATASET \
+#     --models $OUTDIR/edl-*
+# echo "========================================================================="

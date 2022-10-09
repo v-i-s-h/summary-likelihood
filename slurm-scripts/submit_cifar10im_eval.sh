@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=24:00:00
+#SBATCH --time=4:00:00
 #SBATCH --mem-per-cpu=6G
 #SBATCH --gres=gpu:1
 #SBATCH --exclude=dgx[1-7]
@@ -51,16 +51,16 @@ done
 echo "========================================================================="
 
 
-echo "================================= EDL ==================================="
-OUTDIR="zoo/multiclass/edl/computed-prior/CIFAR10Im/VGG11EDL"
+# echo "================================= EDL ==================================="
+# OUTDIR="zoo/multiclass_im/edl/computed-prior/CIFAR10Im/VGG11EDL"
 
-for i in 1 2 3 4 5
-do
-    python eval_calib.py \
-        --corruption $CORRUPTION-$i \
-        --models  ${OUTDIR}/edl-*
-done
-echo "========================================================================="
+# for i in 1 2 3 4 5
+# do
+#     python eval_calib.py \
+#         --corruption $CORRUPTION-$i \
+#         --models  ${OUTDIR}/edl-*
+# done
+# echo "========================================================================="
 
 
 echo "========================= MFVI: CIFAR10 + VGG11 =========================="
@@ -101,3 +101,4 @@ do
     done
 done
 echo "=========================================================================="
+
