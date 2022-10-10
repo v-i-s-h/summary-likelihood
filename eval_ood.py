@@ -70,7 +70,8 @@ def get_model_predictions(model, data_loaders):
 
 
 def compute_mean_entropy(p):
-    return torch.nansum(-torch.log(p) * p, dim=1).nanmean()
+    sample_ent = torch.nansum(-torch.log(p) * p, dim=1)
+    return sample_ent.nanmean(), sample_ent
 
 
 def evaluate_model_performance(preds, n_bins=10):
@@ -83,8 +84,13 @@ def evaluate_model_performance(preds, n_bins=10):
     # Get the predictions for in domain test dataset
     _, scores_test = preds['indomain']
     
-    results['ent_ood'] = compute_mean_entropy(scores_ood).detach().item()
-    results['ent_test'] = compute_mean_entropy(scores_test).detach().item()
+    mean_ent, sample_ent = compute_mean_entropy(scores_ood)
+    results['ent_ood'] = mean_ent.detach().item()
+    results['ent_ood_samples'] = sample_ent.detach().numpy()
+    mean_ent, sample_ent = compute_mean_entropy(scores_test)
+    results['ent_test'] = mean_ent.detach().item()
+    results['ent_test_samples'] = sample_ent.detach().numpy()
+
     results['ent_delta'] = results['ent_ood'] - results['ent_test']
 
     return results
