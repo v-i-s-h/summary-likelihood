@@ -86,10 +86,10 @@ def evaluate_model_performance(preds, n_bins=10):
     
     mean_ent, sample_ent = compute_mean_entropy(scores_ood)
     results['ent_ood'] = mean_ent.detach().item()
-    results['ent_ood_samples'] = sample_ent.detach().numpy()
+    results['ent_ood_samples'] = sample_ent.cpu().detach().numpy()
     mean_ent, sample_ent = compute_mean_entropy(scores_test)
     results['ent_test'] = mean_ent.detach().item()
-    results['ent_test_samples'] = sample_ent.detach().numpy()
+    results['ent_test_samples'] = sample_ent.cpu().detach().numpy()
 
     results['ent_delta'] = results['ent_ood'] - results['ent_test']
 
