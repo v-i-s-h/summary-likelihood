@@ -6,6 +6,7 @@ from .slim import SummaryLikelihoodIm
 from .pl import PredictionLikelihood
 from .labelsmoothing import LabelSmoothing
 from .edl import EvidentialDeepLearning
+from .sgd import SGDDeterministic
 
 # For lookup
 mfvi = MFVI
@@ -14,3 +15,4 @@ slim = SummaryLikelihoodIm
 pl = PredictionLikelihood
 ls = LabelSmoothing
 edl = EvidentialDeepLearning
+sgd = SGDDeterministic

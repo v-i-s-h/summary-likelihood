@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -139,7 +141,7 @@ class VGG11EDL(VGG11):
         return out
 
     def get_evidence(self, x):
-        x = self.model.get_logits(x) # not really logits
+        x = self.model.get_logits(x) # not really logits in case of EDL, but pre-evidence
         evidence = F.relu(x)
 
         return evidence
@@ -154,3 +156,28 @@ class VGG11EDL(VGG11):
             scores = compute_prob_from_evidence(self.evidence_prior, evidence)
 
         return scores
+
+
+class VGG11Deterministic(nn.Module):
+    def __init__(self, K=10, pretrained=False):
+        super().__init__()
+        self.model = VGGBase(make_layers(cfgs['vgg11']), K=K) # build deterministic model
+
+        if pretrained:
+            script_dir = os.path.dirname(__file__)
+            state_dict = torch.load(script_dir + "/state_dicts/vgg11_bn.pt")
+            self.model.load_state_dict(state_dict)
+            print("========> Pretrained model loaded")
+        
+        self.num_classes = K
+
+    def forward(self, x):
+        out = self.model(x) # log_softmax
+
+        return out
+
+    def get_logits(self, x):
+        return self.model.get_logits(x)
+
+    def get_softmax(self, x):
+        return self.model.get_softmax(x)
