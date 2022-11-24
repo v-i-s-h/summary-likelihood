@@ -159,7 +159,7 @@ class VGG11EDL(VGG11):
 
 
 class VGG11Deterministic(nn.Module):
-    def __init__(self, K=10, pretrained=False):
+    def __init__(self, K=10, pretrained=False, head_only=False):
         super().__init__()
         self.model = VGGBase(make_layers(cfgs['vgg11']), K=K) # build deterministic model
 
@@ -167,7 +167,14 @@ class VGG11Deterministic(nn.Module):
             script_dir = os.path.dirname(__file__)
             state_dict = torch.load(script_dir + "/state_dicts/vgg11_bn.pt")
             self.model.load_state_dict(state_dict)
-            print("========> Pretrained model loaded")
+            if head_only:
+                # Reset Linear layers
+                for m in self.model.modules():
+                    if isinstance(m, nn.Linear):
+                        nn.init.normal_(m.weight, 0, 0.01)
+                        nn.init.constant_(m.bias, 0)
+                print("===> Reseting linear layers")
+            print("===> Pretrained model", "(head only)" if head_only  else "")
         
         self.num_classes = K
 
