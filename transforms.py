@@ -37,6 +37,17 @@ def normalize_x_cifar_v2():
         std=(0.2471, 0.2435, 0.2616)
     )
 
+def cifar_da_x():
+    return transforms.Compose([
+                transforms.RandomCrop(32, padding=4),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=(0.4914, 0.4822, 0.4465),
+                    std=(0.2471, 0.2435, 0.2616)    
+                ),
+            ])
+
 
 def tensorize():
     return transforms.Compose([
