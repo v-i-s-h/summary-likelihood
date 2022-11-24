@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=8:00:00
+#SBATCH --time=3:00:00
 #SBATCH --mem-per-cpu=6G
 #SBATCH --gres=gpu:a100:1
 #SBATCH --exclude=dgx[1-7]
@@ -39,54 +39,54 @@ case $SLURM_ARRAY_TASK_ID in
 esac
 
 
-echo "======================== SL: CIFAR10 + VGG11 ========================="
-OUTDIR="zoo/multiclass/sl/CIFAR10/VGG11"
-for alpha in 500 1000 5000 10000
-do
-    alpha_part=`printf '%1.0e' $alpha`
+# echo "======================== SL: CIFAR10 + VGG11 ========================="
+# OUTDIR="zoo/multiclass/sl/CIFAR10/VGG11"
+# for alpha in 500 1000 5000 10000
+# do
+#     alpha_part=`printf '%1.0e' $alpha`
 
-    echo "--------------------- SL: alpha = ${alpha_part}------------------"
-    for level in {1..5}
-    do
-        python eval_calib.py \
-            --corruption $CORRUPTION-$level \
-            --models  ${OUTDIR}/sl-alpha$alpha_part-*
-    done
-done
-echo "=========================================================================="
-
-
-echo "========================= MFVI: CIFAR10 + VGG11 =========================="
-OUTDIR="zoo/multiclass/mfvi/CIFAR10/VGG11"
-for level in {1..5}
-do
-    python eval_calib.py \
-        --corruption $CORRUPTION-$level \
-        --models  ${OUTDIR}/mfvi-*
-done
-echo "=========================================================================="
+#     echo "--------------------- SL: alpha = ${alpha_part}------------------"
+#     for level in {1..5}
+#     do
+#         python eval_calib.py \
+#             --corruption $CORRUPTION-$level \
+#             --models  ${OUTDIR}/sl-alpha$alpha_part-*
+#     done
+# done
+# echo "=========================================================================="
 
 
-echo "======================== LS: CIFAR10 + VGG11 ========================="
-OUTDIR="zoo/multiclass/ls/CIFAR10/VGG11"
-for level in {1..5}
-do
-    python eval_calib.py \
-    --corruption $CORRUPTION-$level \
-    --models  ${OUTDIR}/ls-*
-done
-echo "========================================================================="
+# echo "========================= MFVI: CIFAR10 + VGG11 =========================="
+# OUTDIR="zoo/multiclass/mfvi/CIFAR10/VGG11"
+# for level in {1..5}
+# do
+#     python eval_calib.py \
+#         --corruption $CORRUPTION-$level \
+#         --models  ${OUTDIR}/mfvi-*
+# done
+# echo "=========================================================================="
 
 
-echo "================================= EDL ==================================="
-OUTDIR="zoo/multiclass/edl/CIFAR10/VGG11EDL"
-for level in {1..5}
-do
-    python eval_calib.py \
-    --corruption $CORRUPTION-$level \
-    --models  ${OUTDIR}/edl-*
-done
-echo "========================================================================="
+# echo "======================== LS: CIFAR10 + VGG11 ========================="
+# OUTDIR="zoo/multiclass/ls/CIFAR10/VGG11"
+# for level in {1..5}
+# do
+#     python eval_calib.py \
+#     --corruption $CORRUPTION-$level \
+#     --models  ${OUTDIR}/ls-*
+# done
+# echo "========================================================================="
+
+
+# echo "================================= EDL ==================================="
+# OUTDIR="zoo/multiclass/edl/CIFAR10/VGG11EDL"
+# for level in {1..5}
+# do
+#     python eval_calib.py \
+#     --corruption $CORRUPTION-$level \
+#     --models  ${OUTDIR}/edl-*
+# done
+# echo "========================================================================="
 
 
 # echo "================================= EDL ==================================="
@@ -156,3 +156,50 @@ echo "========================================================================="
 #     done
 # done
 # echo "=========================================================================="
+
+
+# ------------------------------------------------------------------------------
+
+echo "======================== SGD-X CIFAR10 + VGG11 =========================="
+OUTDIR="zoo/multiclass/sgd-rebuttal/CIFAR10/VGG11Deterministic"
+
+for level in {1..5}
+do
+    python eval_calib.py \
+        --corruption $CORRUPTION-$level \
+        --models  ${OUTDIR}/5k/noaug/sgd-noaug-*
+
+    python eval_calib.py \
+        --corruption $CORRUPTION-$level \
+        --models  ${OUTDIR}/30k/noaug/sgd-noaug-*
+
+    python eval_calib.py \
+        --corruption $CORRUPTION-$level \
+        --models  ${OUTDIR}/5k/aug/sgd-da-*
+
+    python eval_calib.py \
+        --corruption $CORRUPTION-$level \
+        --models  ${OUTDIR}/30k/aug/sgd-da-*
+
+    for alpha in 1000
+    do
+        alpha_part=`printf '%1.0e' $alpha`
+    
+        python eval_calib.py \
+            --corruption $CORRUPTION-$level \
+            --models  ${OUTDIR}/5k/noaug/sgdsl-noaug-alpha$alpha_part-*
+
+        python eval_calib.py \
+            --corruption $CORRUPTION-$level \
+            --models  ${OUTDIR}/30k/noaug/sgdsl-noaug-alpha$alpha_part-*
+
+        python eval_calib.py \
+            --corruption $CORRUPTION-$level \
+            --models  ${OUTDIR}/5k/aug/sgdsl-da-alpha$alpha_part-*
+
+        python eval_calib.py \
+            --corruption $CORRUPTION-$level \
+            --models  ${OUTDIR}/30k/aug/sgdsl-da-alpha$alpha_part-*
+    done
+done
+echo "========================================================================="
