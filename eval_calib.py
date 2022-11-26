@@ -114,7 +114,9 @@ def evaluate_model_calibration(preds, n_bins=10):
 
 def run_evaluation(model_str, ckpt_file, dataset, ds_params, transform, corruption):
     # Setup input transform
-    x_transform = getattr(transforms, transform)() # returns a transformation object
+    # Use default transform for evaluation
+    # x_transform = getattr(transforms, transform)() # returns a transformation object
+    x_transform = transforms.default_transforms[dataset]["eval"]()
 
     # Load dataset
     DatasetClass = getattr(datasets, dataset)

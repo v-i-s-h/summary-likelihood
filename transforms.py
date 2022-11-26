@@ -37,6 +37,7 @@ def normalize_x_cifar_v2():
         std=(0.2471, 0.2435, 0.2616)
     )
 
+
 def cifar_da_x():
     return transforms.Compose([
                 transforms.RandomCrop(32, padding=4),
@@ -59,3 +60,21 @@ def normalize_x_sst():
     # Placeholder for normalization
     # Embeddings are used - so no normalization to be applied
     return None
+
+
+
+# Make dafault transformations for datasets
+default_transforms = {
+    "CIFAR10": {
+        "train": normalize_x_cifar_v2,
+        "eval": normalize_x_cifar_v2
+    },
+    "MNIST": {
+        "train": normalize_x,
+        "eval": normalize_x,
+    },
+    "SST": {
+        "train": normalize_x_sst,
+        "eval": normalize_x_sst
+    }
+}
