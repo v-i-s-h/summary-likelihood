@@ -1,8 +1,7 @@
 #!/bin/bash
-#SBATCH --time=2:00:00
+#SBATCH --time=6:00:00
 #SBATCH --mem-per-cpu=6G
 #SBATCH --gres=gpu:1
-#SBATCH --exclude=dgx[1-7]
 #SBATCH --output=logs/job-%A.out
 #SBATCH --error=logs/job-%A.err
 
@@ -68,41 +67,41 @@ OOD_DATASET="SVHN"
 
 
 echo "======================== SGD-X CIFAR10 + VGG11 =========================="
-OUTDIR="zoo/multiclass/sgd-rebuttal/CIFAR10/VGG11Deterministic"
+OUTDIR="zoo/sgd-rebuttal"
 
 python eval_ood.py \
-    --ood $OOD_DATASET
-    --models  ${OUTDIR}/5k/noaug/sgd-noaug-*
+    --ood $OOD_DATASET \
+    --models  ${OUTDIR}/5k/noaug/CIFAR10/VGG11Deterministic/sgd-noaug-*
 
 python eval_ood.py \
-    --ood $OOD_DATASET
-    --models  ${OUTDIR}/30k/noaug/sgd-noaug-*
+    --ood $OOD_DATASET \
+    --models  ${OUTDIR}/30k/noaug/CIFAR10/VGG11Deterministic/sgd-noaug-*
 
 python eval_ood.py \
-    --ood $OOD_DATASET
-    --models  ${OUTDIR}/5k/aug/sgd-da-*
+    --ood $OOD_DATASET \
+    --models  ${OUTDIR}/5k/aug/CIFAR10/VGG11Deterministic/sgd-da-*
 
 python eval_ood.py \
-    --ood $OOD_DATASET
-    --models  ${OUTDIR}/30k/aug/sgd-da-*
+    --ood $OOD_DATASET \
+    --models  ${OUTDIR}/30k/aug/CIFAR10/VGG11Deterministic/sgd-da-*
 
 for alpha in 1000
 do
     alpha_part=`printf '%1.0e' $alpha`
     python eval_ood.py \
-        --ood $OOD_DATASET
-        --models  ${OUTDIR}/5k/noaug/sgdsl-noaug-alpha$alpha_part-*
+        --ood $OOD_DATASET \
+        --models  ${OUTDIR}/5k/noaug/CIFAR10/VGG11Deterministic/sgdsl-noaug-alpha$alpha_part-*
 
     python eval_ood.py \
-        --ood $OOD_DATASET
-        --models  ${OUTDIR}/30k/noaug/sgdsl-noaug-alpha$alpha_part-*
+        --ood $OOD_DATASET \
+        --models  ${OUTDIR}/30k/noaug/CIFAR10/VGG11Deterministic/sgdsl-noaug-alpha$alpha_part-*
 
     python eval_ood.py \
-        --ood $OOD_DATASET
-        --models  ${OUTDIR}/5k/aug/sgdsl-da-alpha$alpha_part-*
+        --ood $OOD_DATASET \
+        --models  ${OUTDIR}/5k/aug/CIFAR10/VGG11Deterministic/sgdsl-da-alpha$alpha_part-*
 
     python eval_ood.py \
-        --ood $OOD_DATASET
-        --models  ${OUTDIR}/30k/aug/sgdsl-da-alpha$alpha_part-*
+        --ood $OOD_DATASET \
+        --models  ${OUTDIR}/30k/aug/CIFAR10/VGG11Deterministic/sgdsl-da-alpha$alpha_part-*
 done
 echo "========================================================================="

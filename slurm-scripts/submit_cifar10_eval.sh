@@ -1,8 +1,7 @@
 #!/bin/bash
-#SBATCH --time=3:00:00
+#SBATCH --time=6:00:00
 #SBATCH --mem-per-cpu=6G
-#SBATCH --gres=gpu:a100:1
-#SBATCH --exclude=dgx[1-7]
+#SBATCH --gres=gpu:1
 #SBATCH --array=1-20
 #SBATCH --output=logs/job-%A-%a.out
 #SBATCH --error=logs/job-%A-%a.err
@@ -161,25 +160,25 @@ esac
 # ------------------------------------------------------------------------------
 
 echo "======================== SGD-X CIFAR10 + VGG11 =========================="
-OUTDIR="zoo/multiclass/sgd-rebuttal/CIFAR10/VGG11Deterministic"
+OUTDIR="zoo/sgd-rebuttal"
 
 for level in {1..5}
 do
     python eval_calib.py \
         --corruption $CORRUPTION-$level \
-        --models  ${OUTDIR}/5k/noaug/sgd-noaug-*
+        --models  ${OUTDIR}/5k/noaug/CIFAR10/VGG11Deterministic/sgd-noaug-*
 
     python eval_calib.py \
         --corruption $CORRUPTION-$level \
-        --models  ${OUTDIR}/30k/noaug/sgd-noaug-*
+        --models  ${OUTDIR}/30k/noaug/CIFAR10/VGG11Deterministic/sgd-noaug-*
 
     python eval_calib.py \
         --corruption $CORRUPTION-$level \
-        --models  ${OUTDIR}/5k/aug/sgd-da-*
+        --models  ${OUTDIR}/5k/aug/CIFAR10/VGG11Deterministic/sgd-da-*
 
     python eval_calib.py \
         --corruption $CORRUPTION-$level \
-        --models  ${OUTDIR}/30k/aug/sgd-da-*
+        --models  ${OUTDIR}/30k/aug/CIFAR10/VGG11Deterministic/sgd-da-*
 
     for alpha in 1000
     do
@@ -187,19 +186,19 @@ do
     
         python eval_calib.py \
             --corruption $CORRUPTION-$level \
-            --models  ${OUTDIR}/5k/noaug/sgdsl-noaug-alpha$alpha_part-*
+            --models  ${OUTDIR}/5k/noaug/CIFAR10/VGG11Deterministic/sgdsl-noaug-alpha$alpha_part-*
 
         python eval_calib.py \
             --corruption $CORRUPTION-$level \
-            --models  ${OUTDIR}/30k/noaug/sgdsl-noaug-alpha$alpha_part-*
+            --models  ${OUTDIR}/30k/noaug/CIFAR10/VGG11Deterministic/sgdsl-noaug-alpha$alpha_part-*
 
         python eval_calib.py \
             --corruption $CORRUPTION-$level \
-            --models  ${OUTDIR}/5k/aug/sgdsl-da-alpha$alpha_part-*
+            --models  ${OUTDIR}/5k/aug/CIFAR10/VGG11Deterministic/sgdsl-da-alpha$alpha_part-*
 
         python eval_calib.py \
             --corruption $CORRUPTION-$level \
-            --models  ${OUTDIR}/30k/aug/sgdsl-da-alpha$alpha_part-*
+            --models  ${OUTDIR}/30k/aug/CIFAR10/VGG11Deterministic/sgdsl-da-alpha$alpha_part-*
     done
 done
 echo "========================================================================="
