@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=6:00:00
+#SBATCH --time=3:00:00
 #SBATCH --mem-per-cpu=6G
 #SBATCH --gres=gpu:1
 #SBATCH --array=1-20
@@ -162,15 +162,15 @@ esac
 echo "======================== SGD-X CIFAR10 + VGG11 =========================="
 OUTDIR="zoo/sgd-rebuttal"
 
-for level in {1..5}
+for level in 5
 do
-    python eval_calib.py \
-        --corruption $CORRUPTION-$level \
-        --models  ${OUTDIR}/5k/noaug/CIFAR10/VGG11Deterministic/sgd-noaug-*
+    # python eval_calib.py \
+    #     --corruption $CORRUPTION-$level \
+    #     --models  ${OUTDIR}/5k/noaug/CIFAR10/VGG11Deterministic/sgd-noaug-*
 
-    python eval_calib.py \
-        --corruption $CORRUPTION-$level \
-        --models  ${OUTDIR}/30k/noaug/CIFAR10/VGG11Deterministic/sgd-noaug-*
+    # python eval_calib.py \
+    #     --corruption $CORRUPTION-$level \
+    #     --models  ${OUTDIR}/30k/noaug/CIFAR10/VGG11Deterministic/sgd-noaug-*
 
     python eval_calib.py \
         --corruption $CORRUPTION-$level \
